@@ -118,6 +118,10 @@ class Conversation(BaseModel):
     last_message_at: datetime = Field(default_factory=datetime.now)
     is_active: bool = True
 
+class NewsletterConfig(BaseModel):
+    instructions: Optional[str]
+    periodicity: int # every x hours
+    start_date: datetime
 
 class User(BaseModel):
     """Main user model with accumulated knowledge"""
@@ -128,21 +132,23 @@ class User(BaseModel):
     google_account_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    
+
     # Core Profile
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
     is_public: bool = True
     onboarding_completed: bool = False
-    
+
     # Knowledge Base
     diary_entries: List[DiaryEntry] = Field(default_factory=list)
     facts: List[LifeFact] = Field(default_factory=list)
     sources: List[InfoSource] = Field(default_factory=list)
-    
+
+    newsletters: List[NewsletterConfig] = Field(default_factory=list)
+
     # Settings
     friendship_tiers: List[FriendshipTier] = Field(default_factory=list)
-    
+
     # Metadata
     knowledge_last_updated: datetime = Field(default_factory=datetime.now)
     last_login: Optional[datetime] = None

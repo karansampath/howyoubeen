@@ -16,7 +16,8 @@ from uuid import uuid4
 
 from ..data_models.models import User, Document, InfoSource, VisibilityCategory, FriendshipTier
 from ..data_models.enums import ContentType, VisibilityCategoryType
-from ..storage.memory_store import store
+from ..storage.storage_service import StorageService
+from ..storage.storage_factory import get_storage_service
 from ..integrations.mock_services import mock_services
 from .document_processor import document_processor, profile_generator
 
@@ -24,21 +25,35 @@ from .document_processor import document_processor, profile_generator
 class OnboardingService:
     """Service to handle user onboarding process"""
     
+    def __init__(self, storage: Optional[StorageService] = None):
+        """
+        Initialize onboarding service
+        
+        Args:
+            storage: Optional storage service. If not provided, will use factory to auto-detect
+        """
+        self.storage = storage or get_storage_service()
+    
     async def start_onboarding(self) -> str:
         """Start a new onboarding process"""
-        user_id = str(uuid4())
-        session_id = await store.create_onboarding_session(user_id)
+        # Generate temporary user ID for the session
+        temp_user_id = str(uuid4())
+        session_id = await self.storage.create_onboarding_session(user_id=temp_user_id)
         return session_id
     
     async def submit_basic_info(self, session_id: str, name: str, bio: str, username: str, email: str) -> bool:
         """Submit basic user information (step a & b)"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
             return False
         
-        # Validate username is unique
-        existing_user = await store.get_user_by_username(username)
+        # Validate username and email are unique
+        existing_user = await self.storage.get_user_by_username(username)
         if existing_user:
+            return False
+        
+        existing_email = await self.storage.get_user_by_email(email)
+        if existing_email:
             return False
         
         basic_info = {
@@ -48,13 +63,13 @@ class OnboardingService:
             "email": email
         }
         
-        await store.update_onboarding_session(session_id, {"basic_info": basic_info})
-        await store.set_onboarding_step(session_id, "basic_info_complete")
+        await self.storage.update_onboarding_session(session_id, {"basic_info": basic_info})
+        await self.storage.set_onboarding_step(session_id, "basic_info_complete")
         return True
     
     async def add_data_source(self, session_id: str, platform: str, credentials: Dict[str, str]) -> Optional[InfoSource]:
         """Add a data source connection (step c)"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
             return None
         
@@ -63,19 +78,23 @@ class OnboardingService:
             return None
         
         try:
-            user_id = session["user_id"]
+            user_id = session.get("user_id")
+            if not user_id:
+                return None
+                
             info_source = await service.connect(user_id, credentials)
             
             # Store the connection
-            current_sources = session["data"].get("data_sources", [])
+            current_sources = session.get("data", {}).get("data_sources", [])
             current_sources.append({
                 "platform": info_source.platform,
                 "url": info_source.url,
                 "description": info_source.info_description,
-                "source_id": info_source.source_id
+                "source_id": info_source.source_id,
+                "user_id": user_id
             })
             
-            await store.update_onboarding_session(session_id, {"data_sources": current_sources})
+            await self.storage.update_onboarding_session(session_id, {"data_sources": current_sources})
             return info_source
             
         except Exception as e:
@@ -84,34 +103,44 @@ class OnboardingService:
     
     async def upload_document(self, session_id: str, file_content: bytes, filename: str, description: str = "") -> Optional[Document]:
         """Upload and process a document (step c)"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
+            return None
+        
+        user_id = session.get("user_id")
+        if not user_id:
             return None
         
         try:
             # Save the uploaded file
-            file_path = await store.save_uploaded_file(file_content, filename)
+            file_result = await self.storage.save_file(user_id, file_content, filename, description)
             
             # Determine content type
             ext = filename.split('.')[-1].lower() if '.' in filename else ''
             content_type = self._get_content_type(ext)
             
-            # Create document record
+            # Create document record using the new storage interface
+            document_data = {
+                "user_id": user_id,
+                "filename": filename,
+                "file_path": file_result["file_path"],
+                "file_size": file_result["file_size"],
+                "content_type": content_type.value,
+                "description": description or f"Uploaded file: {filename}"
+            }
+            
+            document_record = await self.storage.create_document(document_data)
+            
+            # Create Document model for compatibility
             document = Document(
-                file_path=file_path,
+                document_id=document_record["id"],
+                file_path=file_result["file_path"],
                 content_type=content_type,
                 description=description or f"Uploaded file: {filename}"
             )
             
-            await store.create_document({
-                "document_id": document.document_id,
-                "file_path": document.file_path,
-                "content_type": document.content_type,
-                "description": document.description
-            })
-            
             # Store in session
-            current_docs = session["data"].get("uploaded_documents", [])
+            current_docs = session.get("data", {}).get("uploaded_documents", [])
             current_docs.append({
                 "document_id": document.document_id,
                 "filename": filename,
@@ -119,7 +148,7 @@ class OnboardingService:
                 "content_type": content_type.value
             })
             
-            await store.update_onboarding_session(session_id, {"uploaded_documents": current_docs})
+            await self.storage.update_onboarding_session(session_id, {"uploaded_documents": current_docs})
             return document
             
         except Exception as e:
@@ -128,12 +157,16 @@ class OnboardingService:
     
     async def configure_visibility(self, session_id: str, visibility_categories: List[Dict[str, Any]]) -> bool:
         """Configure visibility categories (step d)"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
             return False
         
+        user_id = session.get("user_id")
+        if not user_id:
+            return False
+        
         try:
-            # Convert to VisibilityCategory objects
+            # Convert to VisibilityCategory objects for session storage
             categories = []
             for cat_data in visibility_categories:
                 category = VisibilityCategory(
@@ -143,10 +176,21 @@ class OnboardingService:
                 )
                 categories.append(category)
             
-            await store.update_onboarding_session(session_id, {
+            # Store categories in the storage backend
+            category_data = []
+            for cat in categories:
+                category_data.append({
+                    "name": cat.name or str(cat.type),
+                    "type": str(cat.type),
+                    "description": f"Visibility level: {str(cat.type)}"
+                })
+            
+            await self.storage.create_visibility_categories(user_id, category_data)
+            
+            await self.storage.update_onboarding_session(session_id, {
                 "visibility_categories": [cat.dict() for cat in categories]
             })
-            await store.set_onboarding_step(session_id, "visibility_configured")
+            await self.storage.set_onboarding_step(session_id, "visibility_configured")
             return True
             
         except Exception as e:
@@ -155,44 +199,60 @@ class OnboardingService:
     
     async def process_user_data(self, session_id: str) -> Dict[str, Any]:
         """Process all user data and generate profile (step e)"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
             return {"success": False, "error": "Session not found"}
         
         try:
-            await store.set_onboarding_step(session_id, "processing")
+            await self.storage.set_onboarding_step(session_id, "processing")
             
             # Get session data
-            session_data = session["data"]
+            session_data = session.get("data", {})
             basic_info = session_data.get("basic_info", {})
+            user_id = session.get("user_id")
+            
+            if not user_id:
+                return {"success": False, "error": "No user ID in session"}
             
             # Create the user
             user_data = {
-                "user_id": session["user_id"],
-                "username": basic_info.get("username", f"user_{session['user_id'][:8]}"),
+                "username": basic_info.get("username", f"user_{user_id[:8]}"),
                 "email": basic_info.get("email", ""),
                 "full_name": basic_info.get("full_name", ""),
                 "bio": basic_info.get("bio", ""),
-                "onboarding_completed": False,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "onboarding_completed": False
             }
             
-            user = await store.create_user(user_data)
+            user = await self.storage.create_user(user_data)
+            
+            # Set the user ID in the session for future reference
+            await self.storage.set_onboarding_user_id(session_id, user["id"])
+            actual_user_id = user["id"]
             
             # Process documents
             extracted_data = []
             uploaded_docs = session_data.get("uploaded_documents", [])
             
             for doc_info in uploaded_docs:
-                document = await store.documents.get(doc_info["document_id"])
-                if document:
-                    processing_result = await document_processor.process_document(document)
+                # Documents are already created in storage, just process them
+                processing_result = await self._process_document_for_extraction(doc_info)
+                if processing_result:
                     extracted_data.append(processing_result)
             
             # Process data from external sources
             data_sources = session_data.get("data_sources", [])
             for source_info in data_sources:
+                # Create info source record in storage
+                source_data = {
+                    "user_id": actual_user_id,
+                    "platform": source_info["platform"],
+                    "url": source_info.get("url", ""),
+                    "description": source_info.get("description", f"Data from {source_info['platform']}"),
+                    "source_id": source_info.get("source_id", str(uuid4()))
+                }
+                await self.storage.create_info_source(source_data)
+                
+                # Process the source data
                 platform = source_info["platform"]
                 service = mock_services.get_service(platform)
                 if service:
@@ -212,40 +272,55 @@ class OnboardingService:
             diary_entries = await profile_generator.generate_diary_entries(extracted_data, visibility_categories)
             life_facts = await profile_generator.generate_life_facts(extracted_data, visibility_categories)
             
+            # Store diary entries and life facts in storage
+            for entry in diary_entries:
+                visibility_str = 'public'
+                if entry.visibility:
+                    visibility_str = entry.visibility.type.value if hasattr(entry.visibility.type, 'value') else str(entry.visibility.type)
+                
+                entry_data = {
+                    "user_id": actual_user_id,
+                    "summary": entry.summary,
+                    "content": getattr(entry, 'content', ''),
+                    "visibility": visibility_str,
+                    "date": entry.start_date.isoformat() if hasattr(entry, 'start_date') and entry.start_date else datetime.now().isoformat()
+                }
+                await self.storage.create_diary_entry(entry_data)
+            
+            for fact in life_facts:
+                visibility_str = 'public'
+                if fact.visibility:
+                    visibility_str = fact.visibility.type.value if hasattr(fact.visibility.type, 'value') else str(fact.visibility.type)
+                    
+                fact_data = {
+                    "user_id": actual_user_id,
+                    "summary": fact.summary,
+                    "description": getattr(fact, 'description', ''),
+                    "category": getattr(fact, 'category', 'general'),
+                    "visibility": visibility_str
+                }
+                await self.storage.create_life_fact(fact_data)
+            
             # Generate AI summary
             summary_data = {
-                "full_name": user.full_name,
-                "bio": user.bio,
+                "full_name": user["full_name"],
+                "bio": user["bio"], 
                 "sources": data_sources,
                 "documents": uploaded_docs
             }
             ai_summary = await profile_generator.generate_user_summary(summary_data)
             
-            # Convert data sources to proper InfoSource objects with required fields
-            info_sources = []
-            for source_data in data_sources:
-                info_sources.append(InfoSource(
-                    source_id=source_data.get("source_id", str(uuid4())),
-                    platform=source_data["platform"],
-                    url=source_data.get("url", ""),
-                    info_description=source_data.get("description", f"Data from {source_data['platform']}")
-                ))
-
-            # Update user with generated data
-            await store.update_user(user.user_id, {
-                "diary_entries": [entry.dict() for entry in diary_entries],
-                "facts": [fact.dict() for fact in life_facts],
-                "sources": [source.dict() for source in info_sources],
-                "onboarding_completed": True,
-                "knowledge_last_updated": datetime.now()
+            # Mark user onboarding as completed
+            await self.storage.update_user(actual_user_id, {
+                "onboarding_completed": True
             })
             
-            await store.set_onboarding_step(session_id, "completed")
+            await self.storage.set_onboarding_step(session_id, "completed")
             
             return {
                 "success": True,
-                "user_id": user.user_id,
-                "profile_url": f"/profile/{user.username}",
+                "user_id": actual_user_id,
+                "profile_url": f"/profile/{user['username']}",
                 "ai_summary": ai_summary,
                 "next_steps": [
                     "Share your profile URL with friends",
@@ -260,22 +335,40 @@ class OnboardingService:
     
     async def get_onboarding_status(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get current onboarding status"""
-        session = await store.get_onboarding_session(session_id)
+        session = await self.storage.get_onboarding_session(session_id)
         if not session:
             return None
         
+        session_data = session.get("data", {})
+        
         return {
             "session_id": session_id,
-            "step": session["step"],
-            "created_at": session["created_at"],
-            "updated_at": session["updated_at"],
+            "step": session.get("step", "start"),
+            "created_at": session.get("created_at"),
+            "updated_at": session.get("updated_at"),
             "data_summary": {
-                "has_basic_info": "basic_info" in session["data"],
-                "data_sources_count": len(session["data"].get("data_sources", [])),
-                "documents_count": len(session["data"].get("uploaded_documents", [])),
-                "has_visibility_config": "visibility_categories" in session["data"]
+                "has_basic_info": "basic_info" in session_data,
+                "data_sources_count": len(session_data.get("data_sources", [])),
+                "documents_count": len(session_data.get("uploaded_documents", [])),
+                "has_visibility_config": "visibility_categories" in session_data
             }
         }
+    
+    async def _process_document_for_extraction(self, doc_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process a document for data extraction"""
+        try:
+            # Mock document processing for now
+            # In a real implementation, this would extract text/data from the document
+            return {
+                "type": "document",
+                "filename": doc_info.get("filename"),
+                "description": doc_info.get("description", ""),
+                "content_type": doc_info.get("content_type"),
+                "extracted_data": f"Content from {doc_info.get('filename', 'unknown file')}"
+            }
+        except Exception as e:
+            print(f"Error processing document for extraction: {e}")
+            return None
     
     def _get_content_type(self, file_extension: str) -> ContentType:
         """Determine content type from file extension"""
@@ -293,5 +386,5 @@ class OnboardingService:
             return ContentType.TEXT
 
 
-# Global service instance
+# Global service instance - will use storage factory to auto-detect backend
 onboarding_service = OnboardingService()
