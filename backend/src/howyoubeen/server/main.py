@@ -12,7 +12,8 @@ from dotenv import load_dotenv
 from .routes import onboarding
 
 # Load environment variables
-load_dotenv()
+load_dotenv()  # Load .env first
+load_dotenv(".env.local", override=True)  # Then load .env.local with override
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

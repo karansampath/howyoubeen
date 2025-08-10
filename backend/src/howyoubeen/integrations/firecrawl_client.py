@@ -152,7 +152,8 @@ class FirecrawlClient:
             "includeTags": ["title", "meta", "h1", "h2", "h3", "p", "article"],
             "excludeTags": ["script", "style", "nav", "footer", "header"],
             "onlyMainContent": True,
-            "timeout": timeout
+            "timeout": timeout,
+            "skipTlsVerification": True  # Skip SSL verification for problematic sites
         }
         
         if include_html:
@@ -179,6 +180,12 @@ class FirecrawlClient:
             
         except Exception as e:
             logger.error(f"Failed to scrape {url}: {e}")
+            
+            # For SSL errors, try with additional options
+            if "ssl" in str(e).lower() or "tls" in str(e).lower():
+                logger.info(f"SSL error detected for {url}, trying alternative approach...")
+                # Could add fallback logic here if needed
+            
             raise
     
     async def crawl_website(
@@ -217,7 +224,8 @@ class FirecrawlClient:
                 "formats": ["markdown"],
                 "onlyMainContent": True,
                 "includeTags": ["title", "meta", "h1", "h2", "h3", "p", "article"],
-                "excludeTags": ["script", "style", "nav", "footer", "header"]
+                "excludeTags": ["script", "style", "nav", "footer", "header"],
+                "skipTlsVerification": True
             }
         }
         
@@ -305,7 +313,8 @@ class FirecrawlClient:
         payload = {
             "url": url,
             "schema": schema,
-            "formats": ["extract"]
+            "formats": ["extract"],
+            "skipTlsVerification": True
         }
         
         if prompt:

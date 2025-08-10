@@ -10,7 +10,7 @@ Provides functionality to authenticate with GitHub and collect:
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -76,7 +76,7 @@ class GitHubClient:
         self.base_url = "https://api.github.com"
         self.session = None
         self._rate_limit_remaining = 60  # GitHub rate limit for unauthenticated requests
-        self._rate_limit_reset = datetime.now() + timedelta(hours=1)
+        self._rate_limit_reset = datetime.now(timezone.utc) + timedelta(hours=1)
         
     async def __aenter__(self):
         """Async context manager entry"""
@@ -122,8 +122,8 @@ class GitHubClient:
             raise RuntimeError("Client not initialized. Use async with statement.")
             
         # Check rate limit
-        if self._rate_limit_remaining <= 1 and datetime.now() < self._rate_limit_reset:
-            wait_seconds = (self._rate_limit_reset - datetime.now()).total_seconds()
+        if self._rate_limit_remaining <= 1 and datetime.now(timezone.utc) < self._rate_limit_reset:
+            wait_seconds = (self._rate_limit_reset - datetime.now(timezone.utc)).total_seconds()
             logger.warning(f"Rate limit exceeded. Waiting {wait_seconds:.1f} seconds...")
             await asyncio.sleep(wait_seconds)
         
@@ -135,7 +135,7 @@ class GitHubClient:
             # Update rate limit info from headers
             self._rate_limit_remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
             reset_timestamp = int(response.headers.get("X-RateLimit-Reset", 0))
-            self._rate_limit_reset = datetime.fromtimestamp(reset_timestamp)
+            self._rate_limit_reset = datetime.fromtimestamp(reset_timestamp, timezone.utc)
             
             response.raise_for_status()
             return response.json()
@@ -292,7 +292,7 @@ class GitHubClient:
         commit_count_30_days = 0
         recent_commit_messages = []
         
-        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         
         for event in events_data:
             if event["type"] == "PushEvent":
@@ -343,12 +343,12 @@ class GitHubClient:
             languages = list(commit_activity.languages_used.keys())
             
             recent_repos = [repo for repo in repositories 
-                          if repo.pushed_at > datetime.now() - timedelta(days=90)]
+                          if repo.pushed_at > datetime.now(timezone.utc) - timedelta(days=90)]
             
             collected_data = {
                 "platform": "github",
                 "username": username,
-                "collected_at": datetime.now().isoformat(),
+                "collected_at": datetime.now(timezone.utc).isoformat(),
                 "profile": profile.dict(),
                 "repositories": [repo.dict() for repo in repositories],
                 "commit_activity": commit_activity.dict(),
@@ -358,7 +358,7 @@ class GitHubClient:
                     "total_forks": total_forks,
                     "primary_languages": languages[:5],
                     "recent_active_repos": len(recent_repos),
-                    "account_age_years": (datetime.now() - profile.created_at).days / 365.25,
+                    "account_age_years": (datetime.now(timezone.utc) - profile.created_at).days / 365.25,
                     "activity_level": "high" if commit_activity.commits_last_30_days > 10 else "moderate" if commit_activity.commits_last_30_days > 0 else "low"
                 }
             }
