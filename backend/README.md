@@ -1,0 +1,63 @@
+# KeepInTouch Backend
+
+Backend API for the KeepInTouch AI-powered social connection platform.
+
+## Setup
+
+1. Install dependencies:
+```bash
+poetry install
+```
+
+2. Copy environment variables:
+```bash
+cp .env.example .env
+```
+
+3. Update `.env` with your actual values.
+
+## Development
+
+Start the development server:
+```bash
+poetry run uvicorn keepintouch.server.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## Project Structure
+
+```
+src/keepintouch/
+├── server/          # FastAPI application and routes
+├── data_models/     # Pydantic models and database schemas
+├── ai_engine/       # AI/ML integration (OpenAI, Anthropic)
+├── auth/            # Authentication and authorization
+├── integrations/    # External service integrations (LinkedIn, GitHub, etc.)
+├── notifications/   # Email and notification handling
+├── storage/         # File storage and database operations
+└── utils/           # Utility functions and helpers
+```
+
+## Testing
+
+Run tests:
+```bash
+poetry run pytest
+```
+
+## Code Quality
+
+Format code:
+```bash
+poetry run black .
+poetry run isort .
+```
+
+Type checking:
+```bash
+poetry run mypy .
+```
+
+Linting:
+```bash
+poetry run ruff check .
+```
