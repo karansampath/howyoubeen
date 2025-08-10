@@ -192,6 +192,22 @@ class HowYouBeenAPI {
   async getUserSubscriptions(userId: string): Promise<{ subscriptions: any[]; total_count: number }> {
     return this.request<{ subscriptions: any[]; total_count: number }>(`/api/newsletter/subscriptions/${userId}`);
   }
+
+  // Friends and timeline API endpoints
+  async getUserFriends(userId: string): Promise<any[]> {
+    return this.request<any[]>(`/api/users/${userId}/friends`);
+  }
+
+  async getUserTimeline(username: string): Promise<any[]> {
+    return this.request<any[]>(`/api/users/${username}/timeline`);
+  }
+
+  async uploadContent(userId: string, content: string): Promise<{ success: boolean; message: string; entry_id: string }> {
+    return this.request<{ success: boolean; message: string; entry_id: string }>(`/api/users/${userId}/content`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
 }
 
 // Export singleton instance

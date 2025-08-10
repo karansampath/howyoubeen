@@ -31,7 +31,7 @@ async function getSubscriptionDetails(subscriptionCode: string): Promise<Subscri
       id: 'sub-sarah-1234',
       sourceUsername: 'sarah_codes',
       sourceFullName: 'Sarah Johnson',
-      subscriberEmail: 'friend@example.com',
+      subscriberEmail: 'subscriber@example.com',
       privacyLevel: 'best_friends',
       frequency: 'weekly',
       status: 'active'

@@ -108,6 +108,13 @@ class OnboardingResult(BaseModel):
     ai_summary: str
 
 
+class ChatResponse(BaseModel):
+    """Simple chat response for API endpoints"""
+    response: str
+    conversation_id: str
+    suggested_questions: list[str] = Field(default_factory=list)
+
+
 class ChatResult(BaseModel):
     """Result of friend chat interaction"""
     response: str
@@ -207,6 +214,7 @@ class APIResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     result: Optional[Union[
         OnboardingResult,
+        ChatResponse,
         ChatResult,
         ContentUploadResult,
         GetProfileResult,

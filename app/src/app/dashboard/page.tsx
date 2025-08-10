@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,9 +12,55 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Header } from '@/components/layout/Header';
 import NewsletterManager from '@/components/newsletter/NewsletterManager';
 import { api, type User } from '@/lib/api';
-import { dummyAPI, dummyTimeline, dummyFriends, friendshipLevels, type Friend, type TimelineItem } from '@/lib/dummy-data';
+// Define types and friendship levels locally
+interface Friend {
+  friendship_id: string;
+  friend_name: string;
+  friend_email: string;
+  friendship_level: string;
+  relationship_context?: string;
+  last_interaction?: string;
+  newsletter_subscribed: boolean;
+}
+
+interface TimelineItem {
+  id: string;
+  type: 'diary_entry' | 'life_fact';
+  date: string;
+  content: string;
+  category?: string;
+}
+
+const friendshipLevels = {
+  close_family: {
+    name: "Close Family",
+    description: "Immediate family members with access to personal details",
+    color: "#8b5a3c"
+  },
+  best_friends: {
+    name: "Best Friends", 
+    description: "Closest friends who know about major life events and personal struggles",
+    color: "#d97742"
+  },
+  good_friends: {
+    name: "Good Friends",
+    description: "Regular friends who stay updated on general life happenings",
+    color: "#f4a462"
+  },
+  acquaintances: {
+    name: "Acquaintances",
+    description: "Colleagues and casual friends with basic updates only",
+    color: "#e8956b"
+  },
+  public: {
+    name: "Public",
+    description: "Anyone can see this information",
+    color: "#f5e6d8"
+  }
+};
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,19 +80,38 @@ export default function DashboardPage() {
         setIsLoading(true);
         setError(null);
         
-        // For now, using dummy data. Replace with actual username from auth
-        const userData = await dummyAPI.getUser('johndoe');
+        // Get username from URL params (from onboarding) or localStorage
+        const usernameFromUrl = searchParams.get('user');
+        const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
+        const currentUsername = usernameFromUrl || usernameFromStorage;
+        
+        if (!currentUsername) {
+          setError('No authenticated user found. Please complete onboarding.');
+          return;
+        }
+        
+        // Store username for future use
+        if (typeof window !== 'undefined' && usernameFromUrl) {
+          localStorage.setItem('currentUsername', usernameFromUrl);
+        }
+        
+        const userData = await api.getUser(currentUsername);
         if (userData) {
           setUser(userData);
           
-          // Load friends and timeline data
-          const [friendsData, timelineData] = await Promise.all([
-            dummyAPI.getFriends(userData.user_id),
-            dummyAPI.getTimeline(userData.username)
-          ]);
-          
-          setFriends(friendsData);
-          setTimeline(timelineData);
+          // Load friends and timeline data from real API
+          try {
+            const [friendsData, timelineData] = await Promise.all([
+              api.getUserFriends(userData.user_id),
+              api.getUserTimeline(userData.username)
+            ]);
+            setFriends(friendsData);
+            setTimeline(timelineData);
+          } catch (apiError) {
+            console.warn('Failed to load some data, using empty arrays:', apiError);
+            setFriends([]);
+            setTimeline([]);
+          }
         } else {
           setError('User not found');
         }
@@ -58,7 +124,7 @@ export default function DashboardPage() {
     };
 
     loadDashboardData();
-  }, []);
+  }, [searchParams]);
 
   // Add friend modal state
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
@@ -77,7 +143,10 @@ export default function DashboardPage() {
   const [newsletterSendResult, setNewsletterSendResult] = useState<string | null>(null);
 
   const handleLogout = () => {
-    // In real app, clear auth state and redirect
+    // Clear auth state and redirect
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('currentUsername');
+    }
     window.location.href = '/';
   };
 
@@ -88,11 +157,24 @@ export default function DashboardPage() {
     setNewFriend({ name: '', email: '', level: 'good_friends', context: '' });
   };
 
-  const uploadContent = () => {
-    if (!newContent.trim()) return;
-    // In real app, call API to upload content
-    console.log('Uploading content:', newContent);
-    setNewContent('');
+  const uploadContent = async () => {
+    if (!newContent.trim() || !user) return;
+    
+    try {
+      const result = await api.uploadContent(user.user_id, newContent);
+      console.log('Content uploaded successfully:', result);
+      setNewContent('');
+      
+      // Refresh timeline data
+      try {
+        const timelineData = await api.getUserTimeline(user.username);
+        setTimeline(timelineData);
+      } catch (timelineError) {
+        console.warn('Failed to refresh timeline after upload:', timelineError);
+      }
+    } catch (error) {
+      console.error('Error uploading content:', error);
+    }
   };
 
   const sendNewsletterNow = async () => {
@@ -100,8 +182,8 @@ export default function DashboardPage() {
     setNewsletterSendResult(null);
     
     try {
-      // In real app, this would be the actual backend endpoint
-      const response = await fetch('/api/newsletter/admin/send-daily', {
+      // Use the actual backend endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'}/api/newsletter/admin/send-daily`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +229,14 @@ export default function DashboardPage() {
         <div className="container mx-auto px-6 py-8 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error || 'Failed to load user data'}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+              {error?.includes('No authenticated user found') && (
+                <Button variant="outline" onClick={() => window.location.href = '/onboarding'}>
+                  Complete Onboarding
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -365,7 +454,7 @@ export default function DashboardPage() {
                       <Input
                         label="Email"
                         type="email"
-                        placeholder="friend@example.com"
+                        placeholder="friend.email@example.com"
                         value={newFriend.email}
                         onChange={(e) => setNewFriend({...newFriend, email: e.target.value})}
                       />
