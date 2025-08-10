@@ -128,12 +128,14 @@ export const dummyAPI = {
     return dummyUsers.find(u => u.username === username) || null;
   },
 
-  async getFriends(userId: string): Promise<Friend[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getFriends(_userId: string): Promise<Friend[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
     return dummyFriends;
   },
 
-  async getTimeline(username: string, friendCode?: string): Promise<TimelineItem[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getTimeline(_username: string, _friendCode?: string): Promise<TimelineItem[]> {
     await new Promise(resolve => setTimeout(resolve, 400));
     return dummyTimeline;
   },
@@ -170,7 +172,8 @@ export const dummyAPI = {
     return { session_id: `session_${Date.now()}` };
   },
 
-  async submitBasicInfo(sessionId: string, data: any): Promise<{ success: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async submitBasicInfo(_sessionId: string, _data: { fullName: string; username: string; email: string; bio: string }): Promise<{ success: boolean }> {
     await new Promise(resolve => setTimeout(resolve, 500));
     return { success: true };
   }

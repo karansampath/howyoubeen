@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Header } from '@/components/layout/Header';
-import { dummyAPI, dummyUsers, dummyFriends, dummyTimeline, friendshipLevels } from '@/lib/dummy-data';
+import { dummyUsers, dummyFriends, dummyTimeline, friendshipLevels } from '@/lib/dummy-data';
 
 export default function DashboardPage() {
   // Mock user authentication - in real app this would come from auth context

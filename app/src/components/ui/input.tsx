@@ -2,8 +2,12 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
+interface InputProps extends React.ComponentProps<"input"> {
+  label?: string;
+}
+
+const Input = ({ className, type, label, ...props }: InputProps) => {
+  const input = (
     <input
       type={type}
       data-slot="input"
@@ -16,6 +20,20 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       {...props}
     />
   )
+
+  if (label) {
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-foreground">
+          {label}
+        </label>
+        {input}
+      </div>
+    )
+  }
+
+  return input
 }
 
 export { Input }
+export type { InputProps }

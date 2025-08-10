@@ -101,7 +101,7 @@ export default function LoginPage() {
 
               <div className="mt-6 text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link href="/onboarding" className="text-primary hover:underline">
                     Get started
                   </Link>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 This is a demo version. You can:
               </p>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Use "Continue as Demo User" to access the dashboard</li>
+                <li>• Use &quot;Continue as Demo User&quot; to access the dashboard</li>
                 <li>• Visit <code className="bg-muted px-1 rounded">localhost:3000/johndoe</code> to see the friend interface</li>
                 <li>• Try the onboarding flow to see the setup process</li>
               </ul>

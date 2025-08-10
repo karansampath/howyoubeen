@@ -35,12 +35,13 @@ export default function OnboardingPage() {
   });
   
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
-  const [friendshipTiers, setFriendshipTiers] = useState([
+  
+  const friendshipTiers = [
     { name: 'Close Family', level: 'close_family', description: 'Immediate family members' },
     { name: 'Best Friends', level: 'best_friends', description: 'Closest friends' },
     { name: 'Good Friends', level: 'good_friends', description: 'Regular friends' },
     { name: 'Acquaintances', level: 'acquaintances', description: 'Colleagues and casual friends' }
-  ]);
+  ];
 
   const dataSources = [
     { id: 'linkedin', name: 'LinkedIn', description: 'Professional profile and connections' },
@@ -198,7 +199,7 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="text-center mb-6">
                     <p className="text-muted-foreground">
-                      Select the accounts you'd like to connect. Your AI will learn from these sources to provide better responses.
+                      Select the accounts you&apos;d like to connect. Your AI will learn from these sources to provide better responses.
                     </p>
                   </div>
                   
@@ -327,7 +328,7 @@ export default function OnboardingPage() {
                   <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
                     <p className="text-sm text-foreground">
                       <strong>Next steps:</strong> Your AI will process your information and create personalized responses. 
-                      You'll be able to share your profile URL with friends and start receiving natural conversations!
+                      You&apos;ll be able to share your profile URL with friends and start receiving natural conversations!
                     </p>
                   </div>
                 </div>
