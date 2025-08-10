@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from ..data_models.models import Document, DiaryEntry, LifeFact, VisibilityCategory
+from ..data_models.models import Document, LifeEvent, LifeFact, VisibilityCategory
 from ..data_models.enums import ContentType, VisibilityCategoryType
 
 
@@ -107,7 +107,7 @@ class MockProfileGenerator:
         
         return ". ".join(summary_parts) + "."
     
-    async def generate_diary_entries(self, extracted_data: List[Dict[str, Any]], visibility_config: List[VisibilityCategory]) -> List[DiaryEntry]:
+    async def generate_diary_entries(self, extracted_data: List[Dict[str, Any]], visibility_config: List[VisibilityCategory]) -> List[LifeEvent]:
         """Generate diary entries from extracted data"""
         await asyncio.sleep(0.3)
         
@@ -124,7 +124,7 @@ class MockProfileGenerator:
                 recent_events = extracted.get("recent_events", [])
                 
                 if recent_events:
-                    entries.append(DiaryEntry(
+                    entries.append(LifeEvent(
                         visibility=default_visibility,
                         start_date=datetime.now(),
                         summary=f"Recently enjoyed: {', '.join(recent_events)}. Activities included {', '.join(activities)}."
@@ -132,7 +132,7 @@ class MockProfileGenerator:
         
         # Add a default entry if no specific experiences were found
         if not entries:
-            entries.append(DiaryEntry(
+            entries.append(LifeEvent(
                 visibility=default_visibility,
                 start_date=datetime.now(),
                 summary="Recently been focusing on personal growth and staying connected with friends and family."

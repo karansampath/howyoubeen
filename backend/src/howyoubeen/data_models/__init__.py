@@ -31,7 +31,7 @@ from .enums import ContentType, VisibilityCategoryType
 from .models import (
     Conversation,
     Content,
-    DiaryEntry,
+    LifeEvent,
     Document,
     Friend,
     FriendshipTier,
@@ -48,7 +48,7 @@ __all__ = [
     # Core Models
     "Conversation",
     "Content",
-    "DiaryEntry", 
+    "LifeEvent", 
     "Document",
     "Friend",
     "FriendshipTier",

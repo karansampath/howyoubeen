@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from ..data_models.models import User, Document, InfoSource, VisibilityCategory, FriendshipTier
+from ..data_models.models import User, Document, InfoSource, VisibilityCategory, FriendshipTier, LifeEvent
 from ..data_models.enums import ContentType, VisibilityCategoryType
 from ..storage.storage_service import StorageService
 from ..storage.storage_factory import get_storage_service
@@ -274,13 +274,13 @@ class OnboardingService:
             life_facts = await profile_generator.generate_life_facts(extracted_data, visibility_categories)
             
             # Add external data entries and facts
-            external_entries = session_data.get("external_diary_entries", [])
+            external_events = session_data.get("external_life_events", [])
             external_facts = session_data.get("external_life_facts", [])
             
-            for external_entry in external_entries:
-                entry_data = external_entry["entry_data"]
-                entry = DiaryEntry(**entry_data)
-                diary_entries.append(entry)
+            for external_event in external_events:
+                event_data = external_event["event_data"]
+                event = LifeEvent(**event_data)
+                diary_entries.append(event)
             
             for external_fact in external_facts:
                 fact_data = external_fact["fact_data"]
@@ -413,7 +413,7 @@ class OnboardingService:
                 "platform": "github",
                 "username": username,
                 "connected_at": datetime.now().isoformat(),
-                "entries_count": len(processed_data.diary_entries),
+                "events_count": len(processed_data.life_events),
                 "facts_count": len(processed_data.life_facts),
                 "processing_summary": processed_data.processing_summary
             })
@@ -422,7 +422,7 @@ class OnboardingService:
                 "external_data_sources": current_external_data
             })
             
-            # Store the actual diary entries and life facts for later use in process_user_data
+            # Store the actual life events and life facts for later use in process_user_data
             await self._store_processed_external_data(session_id, processed_data)
             
             return {
@@ -476,7 +476,7 @@ class OnboardingService:
                 "platform": "website",
                 "url": url,
                 "connected_at": datetime.now().isoformat(),
-                "entries_count": len(processed_data.diary_entries),
+                "events_count": len(processed_data.life_events),
                 "facts_count": len(processed_data.life_facts),
                 "processing_summary": processed_data.processing_summary
             })
@@ -485,7 +485,7 @@ class OnboardingService:
                 "external_data_sources": current_external_data
             })
             
-            # Store the actual diary entries and life facts for later use in process_user_data
+            # Store the actual life events and life facts for later use in process_user_data
             await self._store_processed_external_data(session_id, processed_data)
             
             return {
@@ -527,32 +527,89 @@ class OnboardingService:
             session_id: Onboarding session ID
             processed_data: Processed external data to store
         """
+        print(f"[DEBUG] Storing processed external data for session: {session_id}")
+        print(f"[DEBUG] Platform: {processed_data.platform}, Events: {len(processed_data.life_events)}, Facts: {len(processed_data.life_facts)}")
+        
         session = await self.storage.get_onboarding_session(session_id)
         if not session:
+            print(f"[DEBUG] ERROR: Session not found: {session_id}")
             return
         
         session_data = session.get("data", {})
         
-        # Store diary entries
-        stored_entries = session_data.get("external_diary_entries", [])
-        for entry in processed_data.diary_entries:
-            stored_entries.append({
-                "platform": processed_data.platform,
-                "entry_data": entry.dict(),
-                "created_at": datetime.now().isoformat()
-            })
+        # Store life events
+        stored_events = session_data.get("external_life_events", [])
+        print(f"[DEBUG] Processing {len(processed_data.life_events)} life events for JSON storage...")
+        
+        for i, event in enumerate(processed_data.life_events):
+            print(f"[DEBUG] Processing life event {i+1}: {event.summary[:50]}...")
+            
+            # Convert to dict with JSON serialization for datetime objects
+            try:
+                event_dict = event.dict()
+                print(f"[DEBUG] Event dict keys: {list(event_dict.keys())}")
+                
+                # Manually handle datetime serialization
+                if "start_date" in event_dict and event_dict["start_date"]:
+                    print(f"[DEBUG] Converting start_date: {event_dict['start_date']} (type: {type(event_dict['start_date'])})")
+                    event_dict["start_date"] = event_dict["start_date"].isoformat() if hasattr(event_dict["start_date"], "isoformat") else event_dict["start_date"]
+                if "end_date" in event_dict and event_dict["end_date"]:
+                    event_dict["end_date"] = event_dict["end_date"].isoformat() if hasattr(event_dict["end_date"], "isoformat") else event_dict["end_date"]
+                if "created_at" in event_dict and event_dict["created_at"]:
+                    event_dict["created_at"] = event_dict["created_at"].isoformat() if hasattr(event_dict["created_at"], "isoformat") else event_dict["created_at"]
+                if "updated_at" in event_dict and event_dict["updated_at"]:
+                    event_dict["updated_at"] = event_dict["updated_at"].isoformat() if hasattr(event_dict["updated_at"], "isoformat") else event_dict["updated_at"]
+                
+                # Handle nested visibility category datetime fields
+                if "visibility" in event_dict and event_dict["visibility"]:
+                    visibility = event_dict["visibility"]
+                    print(f"[DEBUG] Processing visibility: {type(visibility)}")
+                    if isinstance(visibility, dict):
+                        for key, value in visibility.items():
+                            if hasattr(value, "isoformat"):
+                                print(f"[DEBUG] Converting visibility.{key}: {value}")
+                                visibility[key] = value.isoformat()
+                
+                stored_events.append({
+                    "platform": processed_data.platform,
+                    "event_data": event_dict,
+                    "created_at": datetime.now().isoformat()
+                })
+                print(f"[DEBUG] Successfully processed life event {i+1}")
+                
+            except Exception as e:
+                print(f"[DEBUG] ERROR processing life event {i+1}: {e}")
+                raise
         
         # Store life facts
         stored_facts = session_data.get("external_life_facts", [])
         for fact in processed_data.life_facts:
+            # Convert to dict with JSON serialization for datetime objects
+            fact_dict = fact.dict()
+            # Manually handle datetime serialization
+            if "date" in fact_dict and fact_dict["date"]:
+                fact_dict["date"] = fact_dict["date"].isoformat() if hasattr(fact_dict["date"], "isoformat") else fact_dict["date"]
+            if "created_at" in fact_dict and fact_dict["created_at"]:
+                fact_dict["created_at"] = fact_dict["created_at"].isoformat() if hasattr(fact_dict["created_at"], "isoformat") else fact_dict["created_at"]
+            if "updated_at" in fact_dict and fact_dict["updated_at"]:
+                fact_dict["updated_at"] = fact_dict["updated_at"].isoformat() if hasattr(fact_dict["updated_at"], "isoformat") else fact_dict["updated_at"]
+            
+            # Handle nested visibility category datetime fields
+            if "visibility" in fact_dict and fact_dict["visibility"]:
+                visibility = fact_dict["visibility"]
+                if isinstance(visibility, dict):
+                    for key, value in visibility.items():
+                        if hasattr(value, "isoformat"):
+                            visibility[key] = value.isoformat()
+            
             stored_facts.append({
                 "platform": processed_data.platform,
-                "fact_data": fact.dict(),
+                "fact_data": fact_dict,
                 "created_at": datetime.now().isoformat()
             })
         
         await self.storage.update_onboarding_session(session_id, {
-            "external_diary_entries": stored_entries,
+            "external_life_events": stored_events,
             "external_life_facts": stored_facts
         })
     

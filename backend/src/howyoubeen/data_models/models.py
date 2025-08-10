@@ -43,9 +43,9 @@ class InfoSource(BaseModel):
     is_active: bool = True
 
 
-class DiaryEntry(BaseModel):
-    """A life update associated with a time frame"""
-    entry_id: str = Field(default_factory=generate_uuid)
+class LifeEvent(BaseModel):
+    """A specific life event with a clear date/timeframe"""
+    event_id: str = Field(default_factory=generate_uuid)
     visibility: VisibilityCategory
     start_date: datetime
     end_date: Optional[datetime] = None
@@ -158,7 +158,7 @@ class User(BaseModel):
     onboarding_completed: bool = False
 
     # Knowledge Base
-    diary_entries: List[DiaryEntry] = Field(default_factory=list)
+    diary_entries: List[LifeEvent] = Field(default_factory=list)
     facts: List[LifeFact] = Field(default_factory=list)
     sources: List[InfoSource] = Field(default_factory=list)
 

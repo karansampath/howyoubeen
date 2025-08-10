@@ -9,7 +9,7 @@ from typing import List, Optional, Dict, Any
 import os
 import logging
 
-from ..data_models.models import NewsletterSubscription, User, DiaryEntry, LifeFact
+from ..data_models.models import NewsletterSubscription, User, LifeEvent, LifeFact
 from ..data_models.enums import VisibilityCategoryType, NewsletterFrequency, SubscriptionStatus
 from ..storage.repositories.newsletter_repository import NewsletterRepository
 from ..storage.repositories.user_repository import UserRepository
