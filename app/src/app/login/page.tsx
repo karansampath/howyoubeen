@@ -124,7 +124,7 @@ export default function LoginPage() {
               </p>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Use &quot;Continue as Demo User&quot; to access the dashboard</li>
-                <li>• Visit <code className="bg-muted px-1 rounded">localhost:3000/johndoe</code> to see the friend interface</li>
+                <li>• Visit <code className="bg-muted px-1 rounded">localhost:3000/[username]</code> to see the friend interface</li>
                 <li>• Try the onboarding flow to see the setup process</li>
               </ul>
             </CardContent>

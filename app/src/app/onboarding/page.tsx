@@ -178,14 +178,14 @@ export default function OnboardingPage() {
                   <div className="grid md:grid-cols-2 gap-6">
                     <Input
                       label="Full Name"
-                      placeholder="John Doe"
+                      placeholder="Enter your full name"
                       value={basicInfo.fullName}
                       onChange={(e) => setBasicInfo({...basicInfo, fullName: e.target.value})}
                       required
                     />
                     <Input
                       label="Username"
-                      placeholder="johndoe"
+                      placeholder="Enter your username"
                       value={basicInfo.username}
                       onChange={(e) => setBasicInfo({...basicInfo, username: e.target.value})}
                       required
@@ -195,7 +195,7 @@ export default function OnboardingPage() {
                   <Input
                     label="Email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="your.email@example.com"
                     value={basicInfo.email}
                     onChange={(e) => setBasicInfo({...basicInfo, email: e.target.value})}
                     required

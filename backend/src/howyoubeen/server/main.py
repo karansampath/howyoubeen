@@ -9,7 +9,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from .routes import onboarding, newsletter, user, content, chat
+from .routes import onboarding, newsletter, user, chat, friends, content
 
 # Load environment variables
 load_dotenv()  # Load .env first
@@ -62,19 +62,19 @@ def create_app() -> FastAPI:
         tags=["users"]
     )
     
-    # Add content management routes (life events, life facts, newsletter configs)
-    app.include_router(
-        content.router,
-        tags=["content"]
-    )
-    
-    # Add chat routes for user profile conversations
+    # Add chat routes
     app.include_router(
         chat.router,
+        prefix="/api",
         tags=["chat"]
     )
     
-    # TODO: Add friends routes when implemented
+    # Add friends and timeline routes
+    app.include_router(
+        friends.router,
+        prefix="/api",
+        tags=["friends"]
+    )
     
     # Serve static files (frontend)
     static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "static")
