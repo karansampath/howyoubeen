@@ -45,14 +45,14 @@ class ContentUploadPayload(BaseModel):
     content_type: ContentType
     data: str
     description: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     auto_categorize: bool = True
 
 
 class GetProfilePayload(BaseModel):
     """Payload for retrieving user profile information"""
     username: str
-    requester_info: Optional[Dict[str, str]] = None
+    requester_info: Optional[dict[str, str]] = None
 
 
 class AddFriendPayload(BaseModel):
@@ -104,7 +104,7 @@ class OnboardingResult(BaseModel):
     """Result of user onboarding process"""
     success: bool
     profile_url: str
-    next_steps: List[str] = Field(default_factory=list)
+    next_steps: list[str] = Field(default_factory=list)
     ai_summary: str
 
 
@@ -113,7 +113,7 @@ class ChatResult(BaseModel):
     response: str
     conversation_id: str
     friendship_level_detected: VisibilityCategoryType
-    suggested_questions: List[str] = Field(default_factory=list)
+    suggested_questions: list[str] = Field(default_factory=list)
     confidence_score: float = Field(ge=0.0, le=1.0, default=0.8)
 
 
@@ -122,7 +122,7 @@ class ContentUploadResult(BaseModel):
     success: bool
     content_id: str
     ai_summary: str
-    updated_knowledge_areas: List[str] = Field(default_factory=list)
+    updated_knowledge_areas: list[str] = Field(default_factory=list)
 
 
 class GetProfileResult(BaseModel):
@@ -130,8 +130,8 @@ class GetProfileResult(BaseModel):
     username: str
     display_name: str
     bio: str
-    recent_highlights: List[str] = Field(default_factory=list)
-    available_time_periods: List[str] = Field(default_factory=list)
+    recent_highlights: list[str] = Field(default_factory=list)
+    available_time_periods: list[str] = Field(default_factory=list)
     friendship_level: VisibilityCategoryType
 
 
@@ -145,7 +145,7 @@ class AddFriendResult(BaseModel):
 class UpdateFriendResult(BaseModel):
     """Result of updating friend information"""
     success: bool
-    updated_fields: List[str] = Field(default_factory=list)
+    updated_fields: list[str] = Field(default_factory=list)
     message: str
 
 
@@ -153,7 +153,7 @@ class KnowledgeUpdateResult(BaseModel):
     """Result of knowledge base update"""
     success: bool
     updated_summary: str
-    affected_responses: List[str] = Field(default_factory=list)
+    affected_responses: list[str] = Field(default_factory=list)
 
 
 class NewsletterSubscribeResult(BaseModel):
@@ -173,7 +173,7 @@ class NewsletterUnsubscribeResult(BaseModel):
 class GetNewsletterSubscriptionsResult(BaseModel):
     """Result of getting newsletter subscriptions"""
     success: bool
-    subscriptions: List[Dict[str, Any]] = Field(default_factory=list)
+    subscriptions: list[dict[str, Any]] = Field(default_factory=list)
     total_count: int
 
 
@@ -235,7 +235,7 @@ class ErrorDetail(BaseModel):
 class ValidationError(BaseModel):
     """Validation error response"""
     message: str = "Validation failed"
-    details: List[ErrorDetail] = Field(default_factory=list)
+    details: list[ErrorDetail] = Field(default_factory=list)
 
 
 class AuthenticationError(BaseModel):
