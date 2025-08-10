@@ -280,4 +280,3 @@ export default function UnsubscribePage({ params }: UnsubscribePageProps) {
   );
 }
 
-// Note: generateStaticParams removed because client components cannot export it

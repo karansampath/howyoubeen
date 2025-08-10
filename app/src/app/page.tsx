@@ -149,10 +149,6 @@ export default function Home() {
                   <span className="text-secondary font-bold">3.</span>
                   Receive personalized updates about &quot;how you been&quot;
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-secondary font-bold">4.</span>
-                  Chat with your AI for more specific questions
-                </li>
               </ul>
             </div>
           </div>
