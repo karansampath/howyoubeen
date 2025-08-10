@@ -138,6 +138,8 @@ class NewsletterConfig(BaseModel):
     instructions: Optional[str]
     periodicity: int # every x hours
     start_date: datetime
+    visibility: List[VisibilityCategory]
+    name: str
 
 class User(BaseModel):
     """Main user model with accumulated knowledge"""

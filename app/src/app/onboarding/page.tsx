@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { dummyAPI } from '@/lib/dummy-data';
+import { api, type OnboardingDataRequest } from '@/lib/api';
 
 interface OnboardingStep {
   id: string;
@@ -34,6 +34,8 @@ export default function OnboardingPage() {
     bio: ''
   });
   
+  const [error, setError] = useState<string | null>(null);
+  
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   
   const friendshipTiers = [
@@ -53,27 +55,41 @@ export default function OnboardingPage() {
 
   const handleNext = async () => {
     setIsLoading(true);
+    setError(null);
     
     try {
       if (currentStep === 0) {
         // Start onboarding session if needed
         if (!sessionId) {
-          const session = await dummyAPI.startOnboarding();
+          const session = await api.startOnboarding();
           setSessionId(session.session_id);
         }
-        
-        // Submit basic info
-        await dummyAPI.submitBasicInfo(sessionId!, basicInfo);
       }
       
       if (currentStep < steps.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
         // Final step - complete onboarding
-        window.location.href = '/dashboard';
+        if (!sessionId) {
+          throw new Error('No session ID available');
+        }
+        
+        const onboardingData: OnboardingDataRequest = {
+          username: basicInfo.username,
+          email: basicInfo.email,
+          bio: basicInfo.bio,
+          data_sources: selectedSources,
+          visibility_preference: 'friends_only', // Default visibility
+        };
+        
+        const result = await api.submitOnboardingData(sessionId, onboardingData);
+        
+        // Redirect to user profile or dashboard
+        window.location.href = `/dashboard?user=${result.username}`;
       }
     } catch (error) {
       console.error('Error in onboarding step:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred during onboarding');
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +162,13 @@ export default function OnboardingPage() {
               </p>
             </div>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Step Content */}
           <Card className="mb-8">

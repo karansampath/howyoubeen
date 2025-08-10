@@ -10,13 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Header } from '@/components/layout/Header';
 import NewsletterManager from '@/components/newsletter/NewsletterManager';
-import { dummyUsers, dummyFriends, dummyTimeline, friendshipLevels } from '@/lib/dummy-data';
+import { api, type User } from '@/lib/api';
 
 export default function DashboardPage() {
-  // Mock user authentication - in real app this would come from auth context
-  const [user] = useState(dummyUsers[0]);
-  const [friends] = useState(dummyFriends);
-  const [timeline] = useState(dummyTimeline);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats] = useState({
     totalFriends: 2,
     monthlyInteractions: 15,
@@ -268,7 +267,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <code className="px-3 py-1 bg-background border rounded text-sm">
-                        keepintouch.com/{user.username}
+                        howyoubeen.com/{user?.username}
                       </code>
                       <Button size="sm" variant="outline">Copy</Button>
                     </div>

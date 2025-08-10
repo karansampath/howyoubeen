@@ -20,6 +20,7 @@ from ..storage.storage_service import StorageService
 from ..storage.storage_factory import get_storage_service
 from ..integrations.mock_services import mock_services
 from .document_processor import document_processor, profile_generator
+from .external_data_processor import ExternalDataProcessor, ProcessedExternalData
 
 
 class OnboardingService:
@@ -268,9 +269,23 @@ class OnboardingService:
             visibility_cats = session_data.get("visibility_categories", [])
             visibility_categories = [VisibilityCategory(**cat) for cat in visibility_cats]
             
-            # Generate diary entries and life facts
+            # Generate diary entries and life facts from documents
             diary_entries = await profile_generator.generate_diary_entries(extracted_data, visibility_categories)
             life_facts = await profile_generator.generate_life_facts(extracted_data, visibility_categories)
+            
+            # Add external data entries and facts
+            external_entries = session_data.get("external_diary_entries", [])
+            external_facts = session_data.get("external_life_facts", [])
+            
+            for external_entry in external_entries:
+                entry_data = external_entry["entry_data"]
+                entry = DiaryEntry(**entry_data)
+                diary_entries.append(entry)
+            
+            for external_fact in external_facts:
+                fact_data = external_fact["fact_data"]
+                fact = LifeFact(**fact_data)
+                life_facts.append(fact)
             
             # Store diary entries and life facts in storage
             for entry in diary_entries:
@@ -350,9 +365,198 @@ class OnboardingService:
                 "has_basic_info": "basic_info" in session_data,
                 "data_sources_count": len(session_data.get("data_sources", [])),
                 "documents_count": len(session_data.get("uploaded_documents", [])),
+                "external_sources_count": len(session_data.get("external_data_sources", [])),
                 "has_visibility_config": "visibility_categories" in session_data
             }
         }
+    
+    # External Data Source Methods
+    
+    async def connect_github(
+        self, 
+        session_id: str, 
+        username: str, 
+        github_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Connect and process GitHub data source
+        
+        Args:
+            session_id: Onboarding session ID
+            username: GitHub username
+            github_token: Optional GitHub personal access token
+            
+        Returns:
+            Dictionary with connection status and processing results
+        """
+        session = await self.storage.get_onboarding_session(session_id)
+        if not session:
+            return {"success": False, "error": "Session not found"}
+        
+        try:
+            # Get visibility configuration
+            session_data = session.get("data", {})
+            visibility_cats = session_data.get("visibility_categories", [])
+            visibility_categories = [VisibilityCategory(**cat) for cat in visibility_cats] if visibility_cats else []
+            
+            # Process GitHub data using external data processor
+            processor = ExternalDataProcessor()
+            processed_data = await processor.process_github_data(
+                username=username,
+                visibility_config=visibility_categories,
+                github_token=github_token
+            )
+            
+            # Store processed data in session
+            current_external_data = session_data.get("external_data_sources", [])
+            current_external_data.append({
+                "platform": "github",
+                "username": username,
+                "connected_at": datetime.now().isoformat(),
+                "entries_count": len(processed_data.diary_entries),
+                "facts_count": len(processed_data.life_facts),
+                "processing_summary": processed_data.processing_summary
+            })
+            
+            await self.storage.update_onboarding_session(session_id, {
+                "external_data_sources": current_external_data
+            })
+            
+            # Store the actual diary entries and life facts for later use in process_user_data
+            await self._store_processed_external_data(session_id, processed_data)
+            
+            return {
+                "success": True,
+                "platform": "github",
+                "username": username,
+                "summary": processed_data.processing_summary
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": f"GitHub connection failed: {str(e)}"}
+    
+    async def connect_website(
+        self, 
+        session_id: str, 
+        url: str,
+        firecrawl_api_key: str
+    ) -> Dict[str, Any]:
+        """
+        Connect and process website data source
+        
+        Args:
+            session_id: Onboarding session ID
+            url: Website URL to scrape
+            firecrawl_api_key: Firecrawl API key
+            
+        Returns:
+            Dictionary with connection status and processing results
+        """
+        session = await self.storage.get_onboarding_session(session_id)
+        if not session:
+            return {"success": False, "error": "Session not found"}
+        
+        try:
+            # Get visibility configuration
+            session_data = session.get("data", {})
+            visibility_cats = session_data.get("visibility_categories", [])
+            visibility_categories = [VisibilityCategory(**cat) for cat in visibility_cats] if visibility_cats else []
+            
+            # Process website data using external data processor
+            processor = ExternalDataProcessor()
+            processed_data = await processor.process_website_data(
+                url=url,
+                visibility_config=visibility_categories,
+                firecrawl_api_key=firecrawl_api_key
+            )
+            
+            # Store processed data in session
+            current_external_data = session_data.get("external_data_sources", [])
+            current_external_data.append({
+                "platform": "website",
+                "url": url,
+                "connected_at": datetime.now().isoformat(),
+                "entries_count": len(processed_data.diary_entries),
+                "facts_count": len(processed_data.life_facts),
+                "processing_summary": processed_data.processing_summary
+            })
+            
+            await self.storage.update_onboarding_session(session_id, {
+                "external_data_sources": current_external_data
+            })
+            
+            # Store the actual diary entries and life facts for later use in process_user_data
+            await self._store_processed_external_data(session_id, processed_data)
+            
+            return {
+                "success": True,
+                "platform": "website",
+                "url": url,
+                "summary": processed_data.processing_summary
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": f"Website connection failed: {str(e)}"}
+    
+    async def get_external_data_sources(self, session_id: str) -> List[Dict[str, Any]]:
+        """
+        Get list of connected external data sources for a session
+        
+        Args:
+            session_id: Onboarding session ID
+            
+        Returns:
+            List of connected external data sources
+        """
+        session = await self.storage.get_onboarding_session(session_id)
+        if not session:
+            return []
+        
+        session_data = session.get("data", {})
+        return session_data.get("external_data_sources", [])
+    
+    async def _store_processed_external_data(
+        self, 
+        session_id: str, 
+        processed_data: ProcessedExternalData
+    ) -> None:
+        """
+        Store processed external data in session for later use
+        
+        Args:
+            session_id: Onboarding session ID
+            processed_data: Processed external data to store
+        """
+        session = await self.storage.get_onboarding_session(session_id)
+        if not session:
+            return
+        
+        session_data = session.get("data", {})
+        
+        # Store diary entries
+        stored_entries = session_data.get("external_diary_entries", [])
+        for entry in processed_data.diary_entries:
+            stored_entries.append({
+                "platform": processed_data.platform,
+                "entry_data": entry.dict(),
+                "created_at": datetime.now().isoformat()
+            })
+        
+        # Store life facts
+        stored_facts = session_data.get("external_life_facts", [])
+        for fact in processed_data.life_facts:
+            stored_facts.append({
+                "platform": processed_data.platform,
+                "fact_data": fact.dict(),
+                "created_at": datetime.now().isoformat()
+            })
+        
+        await self.storage.update_onboarding_session(session_id, {
+            "external_diary_entries": stored_entries,
+            "external_life_facts": stored_facts
+        })
+    
+    # Helper Methods
     
     async def _process_document_for_extraction(self, doc_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Process a document for data extraction"""

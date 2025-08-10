@@ -7,7 +7,7 @@ export default function Home() {
       <header className="container mx-auto px-6 py-8">
         <nav className="flex justify-between items-center">
           <div className="text-2xl font-bold text-foreground">
-            KeepInTouch
+            HowYouBeen
           </div>
           <div className="flex gap-4">
             <Link 
@@ -162,7 +162,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-foreground text-background py-12">
         <div className="container mx-auto px-6 text-center">
-          <div className="text-2xl font-bold mb-4">KeepInTouch</div>
+          <div className="text-2xl font-bold mb-4">HowYouBeen</div>
           <p className="text-muted mb-6">
             Stay connected with friends through personalized newsletters - let them know how you been
           </p>

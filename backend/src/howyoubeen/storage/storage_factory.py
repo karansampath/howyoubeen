@@ -27,6 +27,12 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
         StorageService instance configured for the environment
     """
     
+    # Check for environment variable override first
+    env_backend = os.getenv("STORAGE_BACKEND", "").lower()
+    if env_backend in ["local", "supabase"]:
+        force_backend = env_backend
+        logger.info(f"Using storage backend from environment: {env_backend}")
+    
     # Check for forced backend
     if force_backend:
         if force_backend.lower() == "local":
@@ -142,7 +148,7 @@ def create_storage_from_config(config: dict) -> StorageService:
             "backend": "local",
             "local": {
                 "backup_file": "data/backup.json",
-                "temp_dir": "/tmp/keepintouch"
+                "temp_dir": "/tmp/howyoubeen"
             }
         }
         

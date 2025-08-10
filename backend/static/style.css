@@ -676,3 +676,206 @@ input[type="file"]:hover {
         padding: 25px;
     }
 }
+
+/* External Platform Connection Styles */
+.external-platforms {
+    margin-bottom: 30px;
+}
+
+.external-platforms h3 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.external-platforms > p {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+    font-size: 0.95em;
+}
+
+.platform-connect-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.platform-connect-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.platform-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 1.1em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.platform-info p {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.platform-input {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.platform-input input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+}
+
+.platform-input input:focus {
+    outline: none;
+    border-color: rgba(102, 126, 234, 0.6);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.platform-input input::placeholder {
+    color: rgba(77, 77, 77, 0.6);
+}
+
+.connection-status {
+    margin-top: 12px;
+    font-size: 0.9em;
+}
+
+.connection-status .loading {
+    color: #3182ce;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connection-status .loading::before {
+    content: '⏳';
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.connection-status .success {
+    color: #38a169;
+    background: rgba(56, 161, 105, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #38a169;
+}
+
+.connection-status .error {
+    color: #e53e3e;
+    background: rgba(229, 62, 62, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #e53e3e;
+}
+
+.connected-sources-list {
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connected-sources-list h4 {
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.connected-source-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.connected-source-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateX(4px);
+}
+
+.platform-icon {
+    font-size: 1.2em;
+}
+
+.platform-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    min-width: 80px;
+}
+
+.platform-identifier {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    flex: 1;
+}
+
+.entry-count {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.no-sources {
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Mobile responsive adjustments for platform connections */
+@media (max-width: 768px) {
+    .platform-input {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .platform-input input {
+        min-width: unset;
+        margin-bottom: 8px;
+    }
+    
+    .connected-source-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .platform-identifier {
+        font-size: 0.8em;
+        word-break: break-word;
+    }
+}

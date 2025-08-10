@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { dummyAPI, TimelineItem, User } from '@/lib/dummy-data';
+import { api, type User, type ChatResponse } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -25,7 +25,7 @@ export default function FriendChatPage({ params }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -41,42 +41,34 @@ export default function FriendChatPage({ params }: Props) {
   const loadUserProfile = useCallback(async () => {
     try {
       const resolvedParams = await params;
-      const userData = await dummyAPI.getUser(resolvedParams.username);
+      const userData = await api.getUser(resolvedParams.username);
       if (userData) {
         setUser(userData);
         // Send welcome message
         const welcomeMessage: Message = {
           id: 'welcome',
-          content: `Hi! I'm ${userData.full_name}'s AI assistant. I can help you stay updated on what's happening in their life. What would you like to know?`,
+          content: `Hi! I'm ${userData.full_name || userData.username}'s AI assistant. I can help you stay updated on what's happening in their life. What would you like to know?`,
           sender: 'ai',
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
         setSuggestedQuestions([
-          `What has ${userData.full_name} been up to lately?`,
+          `What has ${userData.full_name || userData.username} been up to lately?`,
           'Tell me about recent projects',
           'How are things going?'
         ]);
+      } else {
+        setError('User not found');
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-    }
-  }, [params]);
-
-  const loadTimeline = useCallback(async () => {
-    try {
-      const resolvedParams = await params;
-      const timelineData = await dummyAPI.getTimeline(resolvedParams.username);
-      setTimeline(timelineData);
-    } catch (error) {
-      console.error('Error loading timeline:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load user profile');
     }
   }, [params]);
 
   useEffect(() => {
     loadUserProfile();
-    loadTimeline();
-  }, [loadUserProfile, loadTimeline]);
+  }, [loadUserProfile]);
 
   const sendMessage = async (messageText?: string) => {
     const text = messageText || currentMessage.trim();
@@ -97,7 +89,7 @@ export default function FriendChatPage({ params }: Props) {
     try {
       // Get AI response
       const resolvedParams = await params;
-      const response = await dummyAPI.sendMessage(resolvedParams.username, text, conversationId || undefined);
+      const response = await api.sendMessage(resolvedParams.username, text, conversationId || undefined);
       
       if (!conversationId) {
         setConversationId(response.conversation_id);
@@ -134,20 +126,31 @@ export default function FriendChatPage({ params }: Props) {
     }
   };
 
-  if (!user) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h1>
             <p className="text-muted-foreground mb-6">
-              The user doesn&apos;t exist or their profile is private.
+              {error}
             </p>
             <Button onClick={() => window.location.href = '/'}>
               Go Home
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
       </div>
     );
   }
@@ -164,10 +167,10 @@ export default function FriendChatPage({ params }: Props) {
                 <div className="text-center">
                   <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl text-primary-foreground">
-                      {user.full_name.charAt(0)}
+                      {(user.full_name || user.username).charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <CardTitle className="text-xl">{user.full_name}</CardTitle>
+                  <CardTitle className="text-xl">{user.full_name || user.username}</CardTitle>
                   <p className="text-muted-foreground">@{user.username}</p>
                 </div>
               </CardHeader>
@@ -179,28 +182,26 @@ export default function FriendChatPage({ params }: Props) {
               </CardContent>
             </Card>
 
-            {/* Recent Updates */}
+            {/* Profile Status */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Recent Updates</CardTitle>
+                <CardTitle className="text-lg">Profile Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {timeline.slice(0, 3).map((item) => (
-                    <div key={item.id} className="border-l-2 border-primary pl-3">
-                      <p className="text-sm font-medium text-foreground">
-                        {item.content.length > 60 ? `${item.content.substring(0, 60)}...` : item.content}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {item.type === 'diary_entry' ? 'Update' : 'Fact'}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(item.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="text-sm text-foreground">AI Assistant Active</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span className="text-sm text-foreground">
+                      {user.is_public ? 'Public Profile' : 'Private Profile'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-3">
+                    Profile created: {new Date(user.created_at).toLocaleDateString()}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -212,7 +213,7 @@ export default function FriendChatPage({ params }: Props) {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Get email updates about {user.full_name}&apos;s latest activities
+                  Get email updates about {user.full_name || user.username}&apos;s latest activities
                 </p>
                 <Button variant="outline" className="w-full">
                   Subscribe to Newsletter
@@ -227,10 +228,10 @@ export default function FriendChatPage({ params }: Props) {
               <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                  Chat with {user.full_name}&apos;s AI
+                  Chat with {user.full_name || user.username}&apos;s AI
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Ask me anything about {user.full_name}&apos;s life and activities
+                  Ask me anything about {user.full_name || user.username}&apos;s life and activities
                 </p>
               </CardHeader>
 
@@ -296,7 +297,7 @@ export default function FriendChatPage({ params }: Props) {
               <div className="border-t p-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder={`Message ${user.full_name}&apos;s AI...`}
+                    placeholder={`Message ${user.full_name || user.username}&apos;s AI...`}
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     onKeyPress={handleKeyPress}

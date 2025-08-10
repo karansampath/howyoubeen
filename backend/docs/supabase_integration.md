@@ -17,7 +17,7 @@ The Supabase integration provides:
 The application uses the repository pattern to abstract database operations:
 
 ```
-src/keepintouch/storage/
+src/howyoubeen/storage/
 ├── supabase_client.py          # Supabase client wrapper
 ├── supabase_storage.py         # File storage management
 └── repositories/

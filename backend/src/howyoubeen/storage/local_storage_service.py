@@ -31,7 +31,7 @@ class LocalStorageService(StorageService):
             temp_dir: Optional custom temporary directory
         """
         self.backup_file = backup_file
-        self.temp_dir = temp_dir or tempfile.mkdtemp(prefix="keepintouch_")
+        self.temp_dir = temp_dir or tempfile.mkdtemp(prefix="howyoubeen_")
         
         # In-memory data stores
         self.users: Dict[str, Dict[str, Any]] = {}

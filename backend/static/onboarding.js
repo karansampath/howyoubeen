@@ -196,7 +196,127 @@ function renderPlatformsGrid(platforms, descriptions) {
 }
 
 /**
- * Connect to a platform
+ * Connect GitHub profile
+ */
+async function connectGitHub() {
+    const usernameInput = document.getElementById('github-username');
+    const statusDiv = document.getElementById('github-status');
+    const username = usernameInput.value.trim();
+    
+    if (!username) {
+        showError('Please enter your GitHub username');
+        return;
+    }
+    
+    statusDiv.innerHTML = '<div class="loading">Connecting to GitHub...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/connect-github`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                username: username
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            statusDiv.innerHTML = `
+                <div class="success">✅ Connected! Found ${data.summary.total_repositories} repositories, ${data.summary.entries_generated} diary entries created</div>
+            `;
+            updateConnectedSources();
+        } else {
+            statusDiv.innerHTML = `<div class="error">❌ ${data.detail}</div>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+    }
+}
+
+/**
+ * Connect personal website
+ */
+async function connectWebsite() {
+    const urlInput = document.getElementById('website-url');
+    const statusDiv = document.getElementById('website-status');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showError('Please enter your website URL');
+        return;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        showError('Please enter a valid URL starting with http:// or https://');
+        return;
+    }
+    
+    statusDiv.innerHTML = '<div class="loading">Scraping website content...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/connect-website`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                url: url
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            statusDiv.innerHTML = `
+                <div class="success">✅ Connected! Scraped ${data.summary.pages_scraped} pages, ${data.summary.entries_generated} entries created</div>
+            `;
+            updateConnectedSources();
+        } else {
+            statusDiv.innerHTML = `<div class="error">❌ ${data.detail}</div>`;
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+    }
+}
+
+/**
+ * Update connected sources display
+ */
+async function updateConnectedSources() {
+    try {
+        const response = await fetch(`${API_BASE}/external-sources/${sessionId}`);
+        const data = await response.json();
+        
+        const contentDiv = document.getElementById('connected-sources-content');
+        
+        if (data.external_sources && data.external_sources.length > 0) {
+            contentDiv.innerHTML = data.external_sources.map(source => {
+                const platformIcon = source.platform === 'github' ? '🐙' : '🌐';
+                const identifier = source.username || source.url || 'Connected';
+                return `
+                    <div class="connected-source-item">
+                        <span class="platform-icon">${platformIcon}</span>
+                        <span class="platform-name">${source.platform}</span>
+                        <span class="platform-identifier">${identifier}</span>
+                        <span class="entry-count">${source.entries_count + source.facts_count} items</span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            contentDiv.innerHTML = '<div class="no-sources">No external sources connected yet</div>';
+        }
+    } catch (error) {
+        console.error('Error updating connected sources:', error);
+    }
+}
+
+/**
+ * Connect to a platform (legacy)
  */
 async function connectPlatform(platform) {
     if (connectedPlatforms.has(platform)) {
