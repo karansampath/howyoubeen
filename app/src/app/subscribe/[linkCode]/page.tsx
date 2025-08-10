@@ -136,21 +136,3 @@ export default async function SubscribePage({ params }: SubscribePageProps) {
     </Suspense>
   );
 }
-
-// Generate static paths for common link codes (optional optimization)
-export async function generateStaticParams() {
-  // In a real app, you might generate this from your database
-  const commonLinkCodes = [
-    'bf-sarah-abc123',
-    'gf-sarah-def456', 
-    'public-sarah-ghi789',
-    'bf-mike-jkl012',
-    'public-mike-mno345',
-    'family-emma-pqr678',
-    'gf-emma-stu901'
-  ];
-
-  return commonLinkCodes.map((linkCode) => ({
-    linkCode,
-  }));
-}
