@@ -10,7 +10,6 @@ import logging
 from dotenv import load_dotenv
 
 from .routes import onboarding
-from .routes import supabase_onboarding
 
 # Load environment variables
 load_dotenv()
@@ -24,8 +23,8 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
     
     app = FastAPI(
-        title="KeepInTouch API", 
-        description="AI-Powered Social Connection Platform with Supabase",
+        title="HowYouBeen API", 
+        description="AI companion that keeps your friends updated on your life",
         version="0.2.0",
         docs_url="/api/docs",
         redoc_url="/api/redoc"
@@ -40,25 +39,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Check if Supabase is configured
-    use_supabase = bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_ANON_KEY"))
-    
-    if use_supabase:
-        logger.info("Using Supabase for data persistence")
-        # Include Supabase-integrated API routers
-        app.include_router(
-            supabase_onboarding.router,
-            prefix="/api/onboarding",
-            tags=["onboarding-supabase"]
-        )
-    else:
-        logger.info("Using in-memory storage (development mode)")
-        # Include memory-based API routers  
-        app.include_router(
-            onboarding.router,
-            prefix="/api/onboarding",
-            tags=["onboarding-memory"]
-        )
+    # Use unified onboarding routes with automatic storage backend detection
+    logger.info("Using unified onboarding service with automatic storage backend detection")
+    app.include_router(
+        onboarding.router,
+        prefix="/api/onboarding",
+        tags=["onboarding"]
+    )
     
     # TODO: Add chat, profile, and friends routes when implemented
     # For now, frontend will use dummy data
@@ -71,11 +58,14 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         """Health check endpoint"""
+        # Detect backend based on environment variables
+        use_supabase = bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_ANON_KEY"))
+        
         return {
             "status": "healthy", 
-            "service": "keepintouch-api",
+            "service": "howyoubeen-api",
             "version": "0.2.0",
-            "storage_backend": "supabase" if use_supabase else "memory"
+            "storage_backend": "supabase" if use_supabase else "local"
         }
     
     return app

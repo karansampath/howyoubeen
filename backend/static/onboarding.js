@@ -1,5 +1,5 @@
 /**
- * KeepInTouch Onboarding Frontend
+ * HowYouBeen Onboarding Frontend
  * Handles the multi-step onboarding process
  */
 

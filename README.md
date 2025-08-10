@@ -1,9 +1,9 @@
-# Keep In Touch - AI-Powered Social Connection Platform
-KeepInTouch.com helps people maintain meaningful friendships by creating AI-powered personal profiles that friends can interact with to stay updated on each other's lives.
+# HowYouBeen - AI-Powered Social Connection Platform
+HowYouBeen.com helps people maintain meaningful friendships by creating AI-powered personal profiles that friends can interact with to stay updated on each other's lives.
  
 ## Key Features
 1. AI-Powered Personal Profiles
-Each user creates a personalized profile at keepintouch.com/username
+Each user creates a personalized profile at howyoubeen.com/username
 AI conducts an onboarding interview to understand the user's personality, interests, and life context
 Integration with existing data sources (LinkedIn, GitHub, Instagram, personal websites, Goodreads, etc.)
 Continuous learning through user uploads (photos, videos, text updates) and conversations
@@ -12,7 +12,7 @@ Users configure up to 10 friendship levels (e.g., default Close Family, Best Fri
 AI generates appropriate responses based on friendship level and time period (weekly, monthly, yearly updates)
 Customizable sharing preferences for each tier
 3. Interactive Friend Experience
-Friends visit keepintouch.com/username to chat with the user's AI
+Friends visit howyoubeen.com/username to chat with the user's AI
 Natural conversation interface to ask "What's new with [Name]?" or specific questions
 AI provides contextual updates and can surface relevant memories or recent activities
 4. Automated Communication
