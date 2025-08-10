@@ -6,6 +6,7 @@ allowing pluggable backends (Local, Supabase, etc.) with consistent API.
 """
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 
@@ -429,5 +430,27 @@ class StorageService(ABC):
             
         Returns:
             Activity summary with counts and recent items
+        """
+        pass
+    
+    @abstractmethod
+    async def get_life_events_by_date_range(
+        self, 
+        user_id: str, 
+        start_date: datetime, 
+        end_date: datetime,
+        visibility_levels: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get life events for a user within a specific date range
+        
+        Args:
+            user_id: User ID
+            start_date: Start date for filtering events
+            end_date: End date for filtering events  
+            visibility_levels: Optional list of visibility level types to filter by
+            
+        Returns:
+            List of life events within the date range and visibility filters
         """
         pass
