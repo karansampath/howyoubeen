@@ -60,6 +60,9 @@ def create_app() -> FastAPI:
             tags=["onboarding-memory"]
         )
     
+    # TODO: Add chat, profile, and friends routes when implemented
+    # For now, frontend will use dummy data
+    
     # Serve static files (frontend)
     static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "static")
     if os.path.exists(static_dir):
