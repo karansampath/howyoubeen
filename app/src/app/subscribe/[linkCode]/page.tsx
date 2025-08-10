@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import NewsletterSubscription from '@/components/newsletter/NewsletterSubscription';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mail, User } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface SubscribePageProps {
   params: Promise<{
@@ -10,55 +11,25 @@ interface SubscribePageProps {
   }>;
 }
 
-// Mock function - replace with actual API call
+// Get subscription info from API
 async function getSubscriptionInfo(linkCode: string) {
-  // In a real app, this would call your API
-  const mockData = {
-    'bf-sarah-abc123': {
-      username: 'sarah_codes',
-      fullName: 'Sarah Johnson',
-      privacy_level: 'best_friends',
-      bio: 'Full-stack developer, AI enthusiast, and coffee connoisseur ☕'
-    },
-    'gf-sarah-def456': {
-      username: 'sarah_codes',
-      fullName: 'Sarah Johnson', 
-      privacy_level: 'good_friends',
-      bio: 'Full-stack developer, AI enthusiast, and coffee connoisseur ☕'
-    },
-    'public-sarah-ghi789': {
-      username: 'sarah_codes',
-      fullName: 'Sarah Johnson',
-      privacy_level: 'public',
-      bio: 'Full-stack developer, AI enthusiast, and coffee connoisseur ☕'
-    },
-    'bf-mike-jkl012': {
-      username: 'world_wanderer_mike',
-      fullName: 'Mike Chen',
-      privacy_level: 'best_friends', 
-      bio: 'Digital nomad documenting adventures around the globe 🌍'
-    },
-    'public-mike-mno345': {
-      username: 'world_wanderer_mike',
-      fullName: 'Mike Chen',
-      privacy_level: 'public',
-      bio: 'Digital nomad documenting adventures around the globe 🌍'
-    },
-    'family-emma-pqr678': {
-      username: 'family_life_emma',
-      fullName: 'Emma Rodriguez',
-      privacy_level: 'close_family',
-      bio: 'New mom, marketing professional, and advocate for work-life balance 👶'
-    },
-    'gf-emma-stu901': {
-      username: 'family_life_emma',
-      fullName: 'Emma Rodriguez',
-      privacy_level: 'good_friends',
-      bio: 'New mom, marketing professional, and advocate for work-life balance 👶'
-    }
-  };
-
-  return mockData[linkCode as keyof typeof mockData] || null;
+  try {
+    const subscriptionInfo = await api.getSubscriptionInfo(linkCode);
+    
+    // Get user profile to get full name and bio
+    const userProfile = await api.getUser(subscriptionInfo.username);
+    
+    return {
+      username: subscriptionInfo.username,
+      fullName: userProfile?.full_name || subscriptionInfo.username,
+      privacy_level: subscriptionInfo.privacy_level,
+      bio: userProfile?.bio || `Updates from ${subscriptionInfo.username}`,
+      available_frequencies: subscriptionInfo.available_frequencies
+    };
+  } catch (error) {
+    console.error('Error fetching subscription info:', error);
+    return null;
+  }
 }
 
 function LoadingSkeleton() {
@@ -92,16 +63,24 @@ async function SubscribePageContent({ linkCode }: { linkCode: string }) {
   const handleSubscribe = async (data: { email: string; frequency: string; name?: string }) => {
     'use server';
     
-    // In a real implementation, this would call your API
-    console.log('Subscription data:', {
-      privacy_code: linkCode,
-      subscriber_email: data.email,
-      frequency: data.frequency,
-      subscriber_name: data.name
-    });
-    
-    // Mock successful subscription
-    return { success: true };
+    try {
+      const result = await api.subscribeToNewsletter({
+        privacy_code: linkCode,
+        subscriber_email: data.email,
+        frequency: data.frequency,
+        subscriber_name: data.name
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Subscription error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to subscribe. Please try again.',
+        subscription_id: '',
+        unsubscribe_code: ''
+      };
+    }
   };
 
   return (

@@ -78,6 +78,22 @@ class ProcessResponse(BaseModel):
     error: Optional[str] = None
 
 
+class OnboardingCompleteRequest(BaseModel):
+    session_id: str
+    username: str
+    email: str
+    bio: str
+    data_sources: List[str]
+    visibility_preference: str
+
+
+class OnboardingCompleteResponse(BaseModel):
+    user_id: str
+    username: str
+    profile_url: str
+    status: str
+
+
 @router.post("/start", response_model=StartOnboardingResponse)
 async def start_onboarding():
     """Start a new onboarding session"""
@@ -319,6 +335,44 @@ async def process_user_data(request: ProcessRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing user data: {str(e)}")
+
+
+@router.post("/complete", response_model=OnboardingCompleteResponse)
+async def complete_onboarding(request: OnboardingCompleteRequest):
+    """Complete the onboarding process (simplified version for frontend)"""
+    try:
+        # First submit basic info
+        basic_info_success = await onboarding_service.submit_basic_info(
+            session_id=request.session_id,
+            name="",  # Will be extracted from username for now
+            bio=request.bio,
+            username=request.username,
+            email=request.email
+        )
+        
+        if not basic_info_success:
+            raise HTTPException(status_code=400, detail="Failed to save basic info. Username may already exist.")
+        
+        # Process the user data
+        result = await onboarding_service.process_user_data(request.session_id)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Failed to complete onboarding"))
+        
+        user_id = result.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=500, detail="Failed to create user")
+        
+        return OnboardingCompleteResponse(
+            user_id=user_id,
+            username=request.username,
+            profile_url=f"/api/users/{request.username}",
+            status="completed"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error completing onboarding: {str(e)}")
 
 
 @router.get("/status/{session_id}")

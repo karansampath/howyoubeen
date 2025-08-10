@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import uuid4
 
-from ..base_repository import BaseRepository
+from .base_repository import BaseRepository
 from ...data_models.models import NewsletterSubscription
 from ...data_models.enums import VisibilityCategoryType, NewsletterFrequency, SubscriptionStatus
 
