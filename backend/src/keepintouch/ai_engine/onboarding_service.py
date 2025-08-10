@@ -221,11 +221,21 @@ class OnboardingService:
             }
             ai_summary = await profile_generator.generate_user_summary(summary_data)
             
+            # Convert data sources to proper InfoSource objects with required fields
+            info_sources = []
+            for source_data in data_sources:
+                info_sources.append(InfoSource(
+                    source_id=source_data.get("source_id", str(uuid4())),
+                    platform=source_data["platform"],
+                    url=source_data.get("url", ""),
+                    info_description=source_data.get("description", f"Data from {source_data['platform']}")
+                ))
+
             # Update user with generated data
             await store.update_user(user.user_id, {
                 "diary_entries": [entry.dict() for entry in diary_entries],
                 "facts": [fact.dict() for fact in life_facts],
-                "sources": [InfoSource(**source).dict() for source in data_sources],
+                "sources": [source.dict() for source in info_sources],
                 "onboarding_completed": True,
                 "knowledge_last_updated": datetime.now()
             })
