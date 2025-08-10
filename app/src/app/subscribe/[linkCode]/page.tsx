@@ -5,9 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Mail, User } from 'lucide-react';
 
 interface SubscribePageProps {
-  params: {
+  params: Promise<{
     linkCode: string;
-  };
+  }>;
 }
 
 // Mock function - replace with actual API call
@@ -148,10 +148,12 @@ async function SubscribePageContent({ linkCode }: { linkCode: string }) {
   );
 }
 
-export default function SubscribePage({ params }: SubscribePageProps) {
+export default async function SubscribePage({ params }: SubscribePageProps) {
+  const { linkCode } = await params;
+  
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <SubscribePageContent linkCode={params.linkCode} />
+      <SubscribePageContent linkCode={linkCode} />
     </Suspense>
   );
 }

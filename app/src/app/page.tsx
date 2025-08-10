@@ -36,7 +36,7 @@ export default function Home() {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-            Let friends know "how you been" through personalized newsletters. 
+            Let friends know &quot;how you been&quot; through personalized newsletters. 
             Your AI creates meaningful updates from your life events and shares them 
             with the right people at the right privacy level.
           </p>
@@ -80,7 +80,7 @@ export default function Home() {
               </h3>
               <p className="text-muted-foreground leading-relaxed">
                 Different subscription links for family, friends, and acquaintances.
-                Control what each group knows about "how you been."
+                Control what each group knows about &quot;how you been.&quot;
               </p>
             </div>
 
@@ -147,7 +147,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">3.</span>
-                  Receive personalized updates about "how you been"
+                  Receive personalized updates about &quot;how you been&quot;
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">4.</span>

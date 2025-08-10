@@ -41,7 +41,7 @@ export default function LoginPage() {
           {/* Logo/Brand */}
           <div className="text-center mb-8">
             <Link href="/" className="text-3xl font-bold text-foreground hover:text-primary transition-colors">
-              KeepInTouch
+              HowYouBeen
             </Link>
             <p className="text-muted-foreground mt-2">Sign in to your account</p>
           </div>

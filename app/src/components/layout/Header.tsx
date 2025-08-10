@@ -20,7 +20,7 @@ export function Header({ user, onLogout }: HeaderProps) {
       <div className="container mx-auto px-6 py-4">
         <nav className="flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-foreground hover:text-primary transition-colors">
-            KeepInTouch
+            HowYouBeen
           </Link>
           
           <div className="flex items-center gap-4">

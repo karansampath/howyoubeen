@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KeepInTouch - Meaningful Friendships Through AI",
+  title: "HowYouBeen - Meaningful Friendships Through AI",
   description: "Stay connected with friends through AI-powered personal profiles. Share your life updates and let your AI help friends stay in touch.",
 };
 
