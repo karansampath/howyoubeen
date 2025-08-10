@@ -270,7 +270,7 @@ class OnboardingService:
             visibility_categories = [VisibilityCategory(**cat) for cat in visibility_cats]
             
             # Generate diary entries and life facts from documents
-            diary_entries = await profile_generator.generate_diary_entries(extracted_data, visibility_categories)
+            life_events = await profile_generator.generate_life_events(extracted_data, visibility_categories)
             life_facts = await profile_generator.generate_life_facts(extracted_data, visibility_categories)
             
             # Add external data entries and facts
@@ -280,7 +280,7 @@ class OnboardingService:
             for external_event in external_events:
                 event_data = external_event["event_data"]
                 event = LifeEvent(**event_data)
-                diary_entries.append(event)
+                life_events.append(event)
             
             for external_fact in external_facts:
                 fact_data = external_fact["fact_data"]
@@ -288,7 +288,7 @@ class OnboardingService:
                 life_facts.append(fact)
             
             # Store diary entries and life facts in storage
-            for entry in diary_entries:
+            for entry in life_events:
                 visibility_str = 'public'
                 if entry.visibility:
                     visibility_str = entry.visibility.type.value if hasattr(entry.visibility.type, 'value') else str(entry.visibility.type)
@@ -300,7 +300,7 @@ class OnboardingService:
                     "visibility": visibility_str,
                     "date": entry.start_date.isoformat() if hasattr(entry, 'start_date') and entry.start_date else datetime.now().isoformat()
                 }
-                await self.storage.create_diary_entry(entry_data)
+                await self.storage.create_life_event(entry_data)
             
             for fact in life_facts:
                 visibility_str = 'public'

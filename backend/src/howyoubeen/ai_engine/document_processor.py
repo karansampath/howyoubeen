@@ -107,8 +107,8 @@ class MockProfileGenerator:
         
         return ". ".join(summary_parts) + "."
     
-    async def generate_diary_entries(self, extracted_data: List[Dict[str, Any]], visibility_config: List[VisibilityCategory]) -> List[LifeEvent]:
-        """Generate diary entries from extracted data"""
+    async def generate_life_events(self, extracted_data: List[Dict[str, Any]], visibility_config: List[VisibilityCategory]) -> List[LifeEvent]:
+        """Generate life events from extracted data"""
         await asyncio.sleep(0.3)
         
         entries = []

@@ -158,7 +158,7 @@ class User(BaseModel):
     onboarding_completed: bool = False
 
     # Knowledge Base
-    diary_entries: List[LifeEvent] = Field(default_factory=list)
+    life_events: List[LifeEvent] = Field(default_factory=list)
     facts: List[LifeFact] = Field(default_factory=list)
     sources: List[InfoSource] = Field(default_factory=list)
 

@@ -182,12 +182,12 @@ class TestOnboardingLocalStorage:
         info_sources = await onboarding_service.storage.get_info_sources_for_user(user_id)
         assert len(info_sources) == 2
         
-        # Test diary entries and life facts were created
-        diary_entries = await onboarding_service.storage.get_diary_entries_for_user(user_id)
+        # Test life events and life facts were created
+        life_events = await onboarding_service.storage.get_life_events_for_user(user_id)
         life_facts = await onboarding_service.storage.get_life_facts_for_user(user_id)
         
         # Should have generated some content (exact count depends on mock generators)
-        assert isinstance(diary_entries, list)
+        assert isinstance(life_events, list)
         assert isinstance(life_facts, list)
         
         # Test search functionality

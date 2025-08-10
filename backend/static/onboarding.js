@@ -560,7 +560,7 @@ async function viewProfile(userId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert(`Profile Data:\\n\\nUsername: ${data.username}\\nName: ${data.full_name}\\nBio: ${data.bio}\\nDiary Entries: ${data.diary_entries_count}\\nFacts: ${data.facts_count}\\nSources: ${data.sources_count}`);
+            alert(`Profile Data:\\n\\nUsername: ${data.username}\\nName: ${data.full_name}\\nBio: ${data.bio}\\nLife Events: ${data.life_events_count}\\nFacts: ${data.facts_count}\\nSources: ${data.sources_count}`);
         } else {
             showError('Failed to load profile data');
         }

@@ -119,9 +119,9 @@ class NewsletterService:
         else:  # MONTHLY
             since_date = now - timedelta(days=30)
         
-        # Filter diary entries and facts by privacy level and date
+        # Filter life events and facts by privacy level and date
         relevant_entries = [
-            entry for entry in user.diary_entries
+            entry for entry in user.life_events
             if (entry.visibility.type == privacy_level or 
                 privacy_level in [cat.type for cat in entry.visibility.also_visible]) and
                entry.start_date >= since_date

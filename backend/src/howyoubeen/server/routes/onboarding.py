@@ -421,7 +421,7 @@ async def get_user_profile(user_id: str):
             raise HTTPException(status_code=404, detail="User not found")
         
         # Get counts from storage
-        diary_entries = await storage.get_diary_entries_for_user(user_id)
+        life_events = await storage.get_life_events_for_user(user_id)
         life_facts = await storage.get_life_facts_for_user(user_id)
         info_sources = await storage.get_info_sources_for_user(user_id)
         
@@ -431,7 +431,7 @@ async def get_user_profile(user_id: str):
             "full_name": user["full_name"],
             "bio": user["bio"],
             "onboarding_completed": user["onboarding_completed"],
-            "diary_entries_count": len(diary_entries),
+            "life_events_count": len(life_events),
             "facts_count": len(life_facts),
             "sources_count": len(info_sources)
         }

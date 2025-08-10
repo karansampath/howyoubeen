@@ -282,17 +282,17 @@ class StorageService(ABC):
         """
         pass
     
-    # User Content (Diary Entries & Life Facts)
+    # User Content (Life Events & Life Facts)
     @abstractmethod
-    async def create_diary_entry(self, entry_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_life_event(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Create a diary entry
+        Create a life event
         
         Args:
-            entry_data: Entry data including user_id, summary, visibility, etc.
+            event_data: Event data including user_id, summary, start_date, end_date, visibility, etc.
             
         Returns:
-            Created diary entry record
+            Created life event record
         """
         pass
     
@@ -362,17 +362,17 @@ class StorageService(ABC):
     
     # Query Methods
     @abstractmethod
-    async def get_diary_entries_for_user(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    async def get_life_events_for_user(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """
-        Get diary entries for a user
+        Get life events for a user
         
         Args:
             user_id: User ID
-            limit: Maximum number of entries to return
-            offset: Number of entries to skip
+            limit: Maximum number of events to return
+            offset: Number of events to skip
             
         Returns:
-            List of diary entries
+            List of life events
         """
         pass
     
@@ -412,7 +412,7 @@ class StorageService(ABC):
         Args:
             user_id: User ID
             query: Search query
-            content_types: Optional list of content types to search ['diary_entries', 'life_facts', 'documents']
+            content_types: Optional list of content types to search ['life_events', 'life_facts', 'documents']
             
         Returns:
             Dictionary with content types as keys and matching items as values
