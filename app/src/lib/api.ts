@@ -133,7 +133,7 @@ class HowYouBeenAPI {
     message: string,
     conversationId?: string
   ): Promise<ChatResponse> {
-    const body: any = {
+    const body: { message: string; conversation_id?: string } = {
       message,
     };
 
@@ -168,6 +168,3 @@ class HowYouBeenAPI {
 
 // Export singleton instance
 export const api = new HowYouBeenAPI();
-
-// Export types for use in components
-export type { OnboardingSessionResponse, OnboardingDataRequest, OnboardingCompleteResponse, User, ChatResponse };

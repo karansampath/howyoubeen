@@ -222,7 +222,7 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="text-center mb-6">
                     <p className="text-muted-foreground">
-                      Select the accounts you&apos;d like to connect. Your AI will learn from these sources to create engaging newsletter content about "how you been."
+                      Select the accounts you&apos;d like to connect. Your AI will learn from these sources to create engaging newsletter content about &quot;how you been.&quot;
                     </p>
                   </div>
                   
@@ -351,7 +351,7 @@ export default function OnboardingPage() {
                   <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
                     <p className="text-sm text-foreground">
                       <strong>Next steps:</strong> Your AI will process your information and create personalized newsletter content. 
-                      You&apos;ll be able to create subscription links for different privacy levels and start sharing "how you been" with friends and family!
+                      You&apos;ll be able to create subscription links for different privacy levels and start sharing &quot;how you been&quot; with friends and family!
                     </p>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,54 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Header } from '@/components/layout/Header';
 import NewsletterManager from '@/components/newsletter/NewsletterManager';
 import { api, type User } from '@/lib/api';
+import { dummyAPI, dummyTimeline, dummyFriends, friendshipLevels, type Friend, type TimelineItem } from '@/lib/dummy-data';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [stats] = useState({
     totalFriends: 2,
     monthlyInteractions: 15,
     profileViews: 28,
     newsletterSubscribers: 1
   });
+
+  // Load user data and related info
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // For now, using dummy data. Replace with actual username from auth
+        const userData = await dummyAPI.getUser('johndoe');
+        if (userData) {
+          setUser(userData);
+          
+          // Load friends and timeline data
+          const [friendsData, timelineData] = await Promise.all([
+            dummyAPI.getFriends(userData.user_id),
+            dummyAPI.getTimeline(userData.username)
+          ]);
+          
+          setFriends(friendsData);
+          setTimeline(timelineData);
+        } else {
+          setError('User not found');
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+        setError('Failed to load user data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
 
   // Add friend modal state
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
@@ -86,6 +123,36 @@ export default function DashboardPage() {
       setTimeout(() => setNewsletterSendResult(null), 5000);
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
+        <Header user={null} onLogout={handleLogout} />
+        <div className="container mx-auto px-6 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
+        <Header user={null} onLogout={handleLogout} />
+        <div className="container mx-auto px-6 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error || 'Failed to load user data'}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
@@ -198,7 +265,7 @@ export default function DashboardPage() {
 
             {/* Newsletter Tab */}
             <TabsContent value="newsletter" className="space-y-6">
-              <NewsletterManager userId={user.user_id} username={user.username} />
+              <NewsletterManager userId={user?.user_id || ''} username={user?.username || ''} />
             </TabsContent>
 
             {/* Overview Tab */}
@@ -440,11 +507,11 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
-                    <Input label="Full Name" value={user.full_name} readOnly />
-                    <Input label="Username" value={user.username} readOnly />
+                    <Input label="Full Name" value={user?.full_name || ''} readOnly />
+                    <Input label="Username" value={user?.username || ''} readOnly />
                   </div>
-                  <Input label="Email" value={user.email} readOnly />
-                  <Textarea label="Bio" value={user.bio} rows={3} />
+                  <Input label="Email" value={user?.email || ''} readOnly />
+                  <Textarea label="Bio" value={user?.bio || ''} rows={3} />
                   <Button>Update Profile</Button>
                 </CardContent>
               </Card>

@@ -98,7 +98,7 @@ export default function NewsletterSubscription({
             </div>
             <h3 className="text-lg font-semibold mb-2">Successfully Subscribed!</h3>
             <p className="text-gray-600 mb-4">
-              You'll receive {frequency} updates from {username || 'this user'} at {email}
+              You&apos;ll receive {frequency} updates from {username || 'this user'} at {email}
             </p>
             <p className="text-sm text-gray-500">
               Check your email for a confirmation and unsubscribe instructions.
@@ -118,7 +118,7 @@ export default function NewsletterSubscription({
         </CardTitle>
         {username && (
           <CardDescription>
-            Stay updated with {username}'s latest activities
+            Stay updated with {username}&apos;s latest activities
           </CardDescription>
         )}
       </CardHeader>

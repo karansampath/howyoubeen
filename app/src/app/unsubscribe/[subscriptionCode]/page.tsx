@@ -1,4 +1,6 @@
-import { Suspense } from 'react';
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Mail, UserX, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface UnsubscribePageProps {
-  params: {
+  params: Promise<{
     subscriptionCode: string;
-  };
+  }>;
 }
 
 interface SubscriptionDetails {
@@ -131,7 +133,7 @@ async function UnsubscribePageContent({ subscriptionCode }: { subscriptionCode: 
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Already Unsubscribed</h2>
             <p className="text-gray-600 mb-4">
-              You have already unsubscribed from {subscription.sourceFullName}'s newsletter.
+              You have already unsubscribed from {subscription.sourceFullName}&apos;s newsletter.
             </p>
             <Button variant="outline" onClick={() => window.location.href = '/'}>
               Go to Homepage
@@ -205,7 +207,7 @@ async function UnsubscribePageContent({ subscriptionCode }: { subscriptionCode: 
             {/* Warning */}
             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
               <p className="text-sm text-yellow-800">
-                ⚠️ Once you unsubscribe, you'll stop receiving all newsletter updates from {subscription.sourceFullName}. 
+                ⚠️ Once you unsubscribe, you&apos;ll stop receiving all newsletter updates from {subscription.sourceFullName}. 
                 You can always resubscribe later using their newsletter link.
               </p>
             </div>
@@ -256,23 +258,26 @@ async function UnsubscribePageContent({ subscriptionCode }: { subscriptionCode: 
 }
 
 export default function UnsubscribePage({ params }: UnsubscribePageProps) {
+  const [subscriptionCode, setSubscriptionCode] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setSubscriptionCode(resolvedParams.subscriptionCode);
+    };
+    
+    getParams();
+  }, [params]);
+  
+  if (!subscriptionCode) {
+    return <LoadingSkeleton />;
+  }
+  
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <UnsubscribePageContent subscriptionCode={params.subscriptionCode} />
+      <UnsubscribePageContent subscriptionCode={subscriptionCode} />
     </Suspense>
   );
 }
 
-// Generate static paths for common subscription codes (optional optimization)
-export async function generateStaticParams() {
-  // In a real app, you might generate this from your database
-  const commonCodes = [
-    'sub-sarah-1234',
-    'sub-mike-5678',
-    'sub-emma-9012'
-  ];
-
-  return commonCodes.map((subscriptionCode) => ({
-    subscriptionCode,
-  }));
-}
+// Note: generateStaticParams removed because client components cannot export it
