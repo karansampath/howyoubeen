@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Settings
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface NewsletterSubscription {
   subscription_id: string;
@@ -65,25 +66,42 @@ export default function NewsletterManager({ userId, username }: NewsletterManage
 
   const loadSubscriptions = async () => {
     try {
-      const response = await fetch(`/api/newsletter/subscriptions/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptions(data.subscriptions || []);
-      }
+      const data = await api.getUserSubscriptions(userId);
+      setSubscriptions(data.subscriptions || []);
     } catch (error) {
       console.error('Failed to load subscriptions:', error);
     }
   };
 
   const loadPrivacyLinks = async () => {
-    // In a real implementation, you'd fetch these from your API
-    const mockLinks: PrivacyLink[] = [
-      { privacy_level: 'best_friends', link: `https://howyoubeen.com/subscribe/bf-${username}-abc123`, subscribers_count: 5 },
-      { privacy_level: 'good_friends', link: `https://howyoubeen.com/subscribe/gf-${username}-def456`, subscribers_count: 12 },
-      { privacy_level: 'public', link: `https://howyoubeen.com/subscribe/public-${username}-ghi789`, subscribers_count: 28 }
-    ];
-    setPrivacyLinks(mockLinks);
-    setIsLoading(false);
+    try {
+      const privacyLevelKeys = Object.keys(privacyLevels);
+      const linkPromises = privacyLevelKeys.map(async (level) => {
+        try {
+          const response = await api.createSubscriptionLink(userId, level);
+          const subscribersForLevel = subscriptions.filter(sub => sub.privacy_level === level).length;
+          return {
+            privacy_level: level,
+            link: response.link,
+            subscribers_count: subscribersForLevel
+          };
+        } catch (error) {
+          console.error(`Failed to create link for ${level}:`, error);
+          return {
+            privacy_level: level,
+            link: `https://howyoubeen.com/subscribe/${level}-${username}-error`,
+            subscribers_count: 0
+          };
+        }
+      });
+
+      const links = await Promise.all(linkPromises);
+      setPrivacyLinks(links);
+    } catch (error) {
+      console.error('Failed to load privacy links:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopyLink = async (link: string, privacyLevel: string) => {

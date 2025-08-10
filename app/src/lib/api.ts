@@ -3,7 +3,7 @@
  * Handles communication with FastAPI backend running on localhost:8000
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 
 export interface OnboardingSessionResponse {
   session_id: string;
@@ -153,16 +153,44 @@ class HowYouBeenAPI {
   }
 
   // File upload (for data sources)
-  async uploadFile(file: File, sessionId: string): Promise<{ file_id: string; status: string }> {
+  async uploadFile(file: File, sessionId: string, description?: string): Promise<{ success: boolean; document_id: string; message: string }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('session_id', sessionId);
+    formData.append('description', description || '');
 
-    return this.request<{ file_id: string; status: string }>('/api/onboarding/upload', {
+    return this.request<{ success: boolean; document_id: string; message: string }>('/api/onboarding/upload-document', {
       method: 'POST',
       headers: {}, // Let browser set Content-Type for FormData
       body: formData,
     });
+  }
+
+  // Newsletter API endpoints
+  async getSubscriptionInfo(linkCode: string): Promise<{ username: string; privacy_level: string; available_frequencies: string[] }> {
+    return this.request<{ username: string; privacy_level: string; available_frequencies: string[] }>(`/api/newsletter/link/${linkCode}`);
+  }
+
+  async subscribeToNewsletter(payload: {
+    privacy_code: string;
+    subscriber_email: string;
+    frequency: string;
+    subscriber_name?: string;
+  }): Promise<{ success: boolean; subscription_id: string; message: string; unsubscribe_code: string }> {
+    return this.request<{ success: boolean; subscription_id: string; message: string; unsubscribe_code: string }>('/api/newsletter/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async createSubscriptionLink(userId: string, privacyLevel: string): Promise<{ link: string }> {
+    return this.request<{ link: string }>(`/api/newsletter/create-link?user_id=${userId}&privacy_level=${privacyLevel}`, {
+      method: 'POST',
+    });
+  }
+
+  async getUserSubscriptions(userId: string): Promise<{ subscriptions: any[]; total_count: number }> {
+    return this.request<{ subscriptions: any[]; total_count: number }>(`/api/newsletter/subscriptions/${userId}`);
   }
 }
 
