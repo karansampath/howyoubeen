@@ -9,7 +9,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from .routes import onboarding
+from .routes import onboarding, newsletter
 
 # Load environment variables
 load_dotenv()  # Load .env first
@@ -46,6 +46,13 @@ def create_app() -> FastAPI:
         onboarding.router,
         prefix="/api/onboarding",
         tags=["onboarding"]
+    )
+    
+    # Include newsletter routes
+    app.include_router(
+        newsletter.router,
+        prefix="/api",
+        tags=["newsletter"]
     )
     
     # TODO: Add chat, profile, and friends routes when implemented

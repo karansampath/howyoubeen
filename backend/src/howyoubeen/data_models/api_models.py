@@ -20,6 +20,7 @@ class RequestType(str, Enum):
     NEWSLETTER_SUBSCRIBE = "newsletter_subscribe"
     NEWSLETTER_UNSUBSCRIBE = "newsletter_unsubscribe"
     GET_NEWSLETTER_SUBSCRIPTIONS = "get_newsletter_subscriptions"
+    NEWSLETTER_GENERATE = "newsletter_generate"
 
 
 # Specific Request Payloads
@@ -97,6 +98,12 @@ class NewsletterUnsubscribePayload(BaseModel):
 class GetNewsletterSubscriptionsPayload(BaseModel):
     """Payload for getting newsletter subscriptions"""
     user_id: str
+
+
+class NewsletterGeneratePayload(BaseModel):
+    """Payload for generating a newsletter"""
+    user_id: str
+    newsletter_config: dict[str, Any]  # Will be converted to NewsletterConfig
 
 
 # Specific Response Results
@@ -177,6 +184,15 @@ class GetNewsletterSubscriptionsResult(BaseModel):
     total_count: int
 
 
+class NewsletterGenerateResult(BaseModel):
+    """Result of newsletter generation"""
+    success: bool
+    content: Optional[str] = None
+    error_message: Optional[str] = None
+    events_count: int = 0
+    generation_summary: dict[str, Any] = Field(default_factory=dict)
+
+
 # Top-Level Request/Response Models
 class APIRequest(BaseModel):
     """Top-level API request structure"""
@@ -193,7 +209,8 @@ class APIRequest(BaseModel):
         KnowledgeUpdatePayload,
         NewsletterSubscribePayload,
         NewsletterUnsubscribePayload,
-        GetNewsletterSubscriptionsPayload
+        GetNewsletterSubscriptionsPayload,
+        NewsletterGeneratePayload
     ]
 
     class Config:
@@ -215,7 +232,8 @@ class APIResponse(BaseModel):
         KnowledgeUpdateResult,
         NewsletterSubscribeResult,
         NewsletterUnsubscribeResult,
-        GetNewsletterSubscriptionsResult
+        GetNewsletterSubscriptionsResult,
+        NewsletterGenerateResult
     ]] = None
     error: Optional[str] = None
     error_code: Optional[str] = None

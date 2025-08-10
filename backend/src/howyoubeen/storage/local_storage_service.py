@@ -587,3 +587,43 @@ class LocalStorageService(StorageService):
                 "documents": len([d for d in self.documents.values() if d.get("user_id") == user_id]),
             }
         }
+    
+    async def get_life_events_by_date_range(
+        self, 
+        user_id: str, 
+        start_date: datetime, 
+        end_date: datetime,
+        visibility_levels: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """Get life events for a user within a specific date range"""
+        matching_events = []
+        
+        for entry in self.diary_entries.values():
+            if entry.get("user_id") != user_id:
+                continue
+                
+            # Parse event start date
+            try:
+                event_start_date = datetime.fromisoformat(entry.get("start_date"))
+            except (ValueError, TypeError):
+                continue
+                
+            # Check if event falls within date range
+            if not (start_date <= event_start_date <= end_date):
+                continue
+                
+            # Check visibility level if specified
+            if visibility_levels:
+                visibility_type = entry.get("visibility", {}).get("type")
+                if visibility_type not in visibility_levels:
+                    continue
+                    
+            matching_events.append(entry)
+        
+        # Sort by start_date descending (most recent first)
+        matching_events.sort(
+            key=lambda x: datetime.fromisoformat(x.get("start_date")), 
+            reverse=True
+        )
+        
+        return matching_events
