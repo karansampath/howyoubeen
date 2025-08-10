@@ -63,8 +63,45 @@
                 <h2>Connect Your Data Sources</h2>
                 <p>Connect your social media and other accounts to help us understand you better.</p>
                 
-                <div class="data-sources-grid" id="platforms-grid">
-                    <!-- Platforms will be loaded dynamically -->
+                <div class="external-platforms">
+                    <h3>Connect External Platforms</h3>
+                    <p>Connect your GitHub, personal website, or other online presence.</p>
+                    
+                    <!-- GitHub Connection -->
+                    <div class="platform-connect-card">
+                        <div class="platform-info">
+                            <h4>🐙 GitHub</h4>
+                            <p>Connect your GitHub profile to showcase your coding projects and skills.</p>
+                        </div>
+                        <div class="platform-input">
+                            <input type="text" id="github-username" placeholder="Your GitHub username" />
+                            <button type="button" class="btn-secondary" onclick="connectGitHub()">Connect GitHub</button>
+                        </div>
+                        <div id="github-status" class="connection-status"></div>
+                    </div>
+
+                    <!-- Website Connection -->
+                    <div class="platform-connect-card">
+                        <div class="platform-info">
+                            <h4>🌐 Personal Website</h4>
+                            <p>Add content from your personal website, blog, or portfolio.</p>
+                        </div>
+                        <div class="platform-input">
+                            <input type="url" id="website-url" placeholder="https://yourwebsite.com" />
+                            <button type="button" class="btn-secondary" onclick="connectWebsite()">Scrape Website</button>
+                        </div>
+                        <div id="website-status" class="connection-status"></div>
+                    </div>
+
+                    <!-- Connected Sources Display -->
+                    <div id="connected-sources" class="connected-sources-list">
+                        <h4>Connected Sources</h4>
+                        <div id="connected-sources-content"></div>
+                    </div>
+                </div>
+                
+                <div class="data-sources-grid" id="platforms-grid" style="display: none;">
+                    <!-- Legacy platforms will be loaded dynamically -->
                 </div>
                 
                 <div class="upload-section">

@@ -20,7 +20,7 @@ cp .env.example .env
 
 Start the development server:
 ```bash
-poetry run uvicorn howyoubeen.server.main:app --reload --host 0.0.0.0 --port 8000
+poetry run uvicorn howyoubeen.server.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ## Project Structure

@@ -193,6 +193,97 @@ async def configure_visibility(request: VisibilityConfigRequest):
         raise HTTPException(status_code=500, detail=f"Error configuring visibility: {str(e)}")
 
 
+# External Data Source Routes
+
+class GitHubConnectRequest(BaseModel):
+    session_id: str
+    username: str
+    github_token: Optional[str] = None
+
+
+class WebsiteConnectRequest(BaseModel):
+    session_id: str
+    url: str
+
+
+class ExternalSourceResponse(BaseModel):
+    success: bool
+    platform: str
+    message: str
+    summary: Optional[Dict[str, Any]] = None
+
+
+@router.post("/connect-github", response_model=ExternalSourceResponse)
+async def connect_github(request: GitHubConnectRequest):
+    """Connect GitHub data source during onboarding"""
+    try:
+        result = await onboarding_service.connect_github(
+            session_id=request.session_id,
+            username=request.username,
+            github_token=request.github_token
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return ExternalSourceResponse(
+            success=True,
+            platform="github",
+            message=f"Successfully connected GitHub profile for {request.username}",
+            summary=result["summary"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error connecting GitHub: {str(e)}")
+
+
+@router.post("/connect-website", response_model=ExternalSourceResponse)
+async def connect_website(request: WebsiteConnectRequest):
+    """Connect website data source during onboarding"""
+    try:
+        # Get Firecrawl API key from environment or settings
+        # For now, we'll require it to be configured in the environment
+        import os
+        firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY")
+        if not firecrawl_api_key:
+            raise HTTPException(status_code=500, detail="Firecrawl API key not configured")
+        
+        result = await onboarding_service.connect_website(
+            session_id=request.session_id,
+            url=request.url,
+            firecrawl_api_key=firecrawl_api_key
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return ExternalSourceResponse(
+            success=True,
+            platform="website",
+            message=f"Successfully scraped content from {request.url}",
+            summary=result["summary"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error connecting website: {str(e)}")
+
+
+@router.get("/external-sources/{session_id}")
+async def get_external_sources(session_id: str):
+    """Get list of connected external data sources for a session"""
+    try:
+        sources = await onboarding_service.get_external_data_sources(session_id)
+        return {
+            "session_id": session_id,
+            "external_sources": sources,
+            "count": len(sources)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting external sources: {str(e)}")
+
+
 @router.post("/process", response_model=ProcessResponse)
 async def process_user_data(request: ProcessRequest):
     """Process all user data and generate profile (step e)"""

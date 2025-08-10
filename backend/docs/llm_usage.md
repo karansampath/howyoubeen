@@ -258,9 +258,9 @@ litellm.success_callback.append(track_usage)
 7. **Monitor costs** and usage patterns
 8. **Use streaming** for real-time user experiences
 
-## Integration with KeepInTouch Architecture
+## Integration with HowYouBeen Architecture
 
-The AI service should be implemented in `src/keepintouch/ai_engine/` and used across:
+The AI service should be implemented in `src/howyoubeen/ai_engine/` and used across:
 
 - **User onboarding**: Personality analysis and profile creation
 - **Friend interactions**: Real-time chat with user's AI

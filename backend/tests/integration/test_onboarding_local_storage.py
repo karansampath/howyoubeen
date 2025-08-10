@@ -11,8 +11,8 @@ import tempfile
 import pytest
 from typing import Dict, Any
 
-from keepintouch.ai_engine.onboarding_service import OnboardingService
-from keepintouch.storage.local_storage_service import LocalStorageService
+from howyoubeen.ai_engine.onboarding_service import OnboardingService
+from howyoubeen.storage.local_storage_service import LocalStorageService
 
 
 class TestOnboardingLocalStorage:

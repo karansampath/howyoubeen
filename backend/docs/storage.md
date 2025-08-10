@@ -59,7 +59,7 @@ class LocalStorageService(StorageService):
         self.users: Dict[str, Dict] = {}
         self.sessions: Dict[str, Dict] = {}
         self.documents: Dict[str, Dict] = {}
-        self.temp_dir = tempfile.mkdtemp(prefix="keepintouch_")
+        self.temp_dir = tempfile.mkdtemp(prefix="howyoubeen_")
         self.backup_file = backup_file
         
         # Load from backup if available
@@ -69,7 +69,7 @@ class LocalStorageService(StorageService):
 
 ### File Organization
 ```
-/tmp/keepintouch_XXXXX/
+/tmp/howyoubeen_XXXXX/
 ├── users/
 │   ├── user_123/
 │   │   ├── documents/
@@ -208,7 +208,7 @@ storage_service = SupabaseStorageService(
    ```bash
    # Optional: Configure local storage
    LOCAL_STORAGE_BACKUP=data/dev_backup.json
-   LOCAL_STORAGE_TEMP_DIR=/tmp/keepintouch_dev
+   LOCAL_STORAGE_TEMP_DIR=/tmp/howyoubeen_dev
    ```
 
 ### Production Setup (Supabase)

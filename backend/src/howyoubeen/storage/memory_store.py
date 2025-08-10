@@ -22,7 +22,7 @@ class MemoryStore:
         self.users: Dict[str, User] = {}
         self.onboarding_sessions: Dict[str, Dict[str, Any]] = {}
         self.documents: Dict[str, Document] = {}
-        self.temp_files_dir = tempfile.mkdtemp(prefix="keepintouch_uploads_")
+        self.temp_files_dir = tempfile.mkdtemp(prefix="howyoubeen_uploads_")
         
     async def create_onboarding_session(self, user_id: str) -> str:
         """Create a new onboarding session"""
