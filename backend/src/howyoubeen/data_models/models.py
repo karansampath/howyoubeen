@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .enums import ContentType, VisibilityCategoryType
+from .enums import ContentType, VisibilityCategoryType, NewsletterFrequency, SubscriptionStatus
 
 
 def generate_uuid() -> str:
@@ -118,7 +118,23 @@ class Conversation(BaseModel):
     last_message_at: datetime = Field(default_factory=datetime.now)
     is_active: bool = True
 
+class NewsletterSubscription(BaseModel):
+    """Newsletter subscription for friends"""
+    subscription_id: str = Field(default_factory=generate_uuid)
+    source_user_id: str  # User whose newsletter this is
+    source_username: str  # Username for easy reference
+    subscriber_email: str
+    privacy_level: VisibilityCategoryType
+    frequency: NewsletterFrequency
+    status: SubscriptionStatus = SubscriptionStatus.ACTIVE
+    subscription_code: str = Field(default_factory=generate_uuid)  # Unique code for unsubscribe
+    last_sent: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
 class NewsletterConfig(BaseModel):
+    """Newsletter generation configuration for users"""
     instructions: Optional[str]
     periodicity: int # every x hours
     start_date: datetime
@@ -145,6 +161,7 @@ class User(BaseModel):
     sources: List[InfoSource] = Field(default_factory=list)
 
     newsletters: List[NewsletterConfig] = Field(default_factory=list)
+    newsletter_subscriptions: List[NewsletterSubscription] = Field(default_factory=list)  # Subscriptions to this user's newsletter
 
     # Settings
     friendship_tiers: List[FriendshipTier] = Field(default_factory=list)

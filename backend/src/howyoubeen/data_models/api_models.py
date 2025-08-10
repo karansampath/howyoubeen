@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from .enums import ContentType, VisibilityCategoryType
+from .enums import ContentType, VisibilityCategoryType, NewsletterFrequency
 
 
 class RequestType(str, Enum):
@@ -17,22 +17,25 @@ class RequestType(str, Enum):
     ADD_FRIEND = "add_friend"
     UPDATE_FRIEND = "update_friend"
     KNOWLEDGE_UPDATE = "knowledge_update"
+    NEWSLETTER_SUBSCRIBE = "newsletter_subscribe"
+    NEWSLETTER_UNSUBSCRIBE = "newsletter_unsubscribe"
+    GET_NEWSLETTER_SUBSCRIPTIONS = "get_newsletter_subscriptions"
 
 
 # Specific Request Payloads
 class OnboardingPayload(BaseModel):
     """Payload for user onboarding process"""
     user_id: str
-    interview_responses: Dict[str, str]
-    data_sources: List[Dict[str, str]] = Field(default_factory=list)
-    friendship_tiers: List[Dict[str, Any]] = Field(default_factory=list)
+    interview_responses: dict[str, str]
+    data_sources: list[dict[str, str]] = Field(default_factory=list)
+    friendship_tiers: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ChatPayload(BaseModel):
     """Payload for friend chat interactions"""
     profile_username: str
     message: str
-    requester_info: Optional[Dict[str, str]] = None
+    requester_info: Optional[dict[str, str]] = None
     conversation_id: Optional[str] = None
 
 
@@ -75,6 +78,25 @@ class KnowledgeUpdatePayload(BaseModel):
     update_type: str
     content: str
     category: Optional[str] = None
+
+
+class NewsletterSubscribePayload(BaseModel):
+    """Payload for subscribing to a newsletter"""
+    username: str
+    subscriber_email: str
+    privacy_code: str  # Encoded privacy level
+    frequency: NewsletterFrequency
+    subscriber_name: Optional[str] = None
+
+
+class NewsletterUnsubscribePayload(BaseModel):
+    """Payload for unsubscribing from a newsletter"""
+    subscription_code: str
+
+
+class GetNewsletterSubscriptionsPayload(BaseModel):
+    """Payload for getting newsletter subscriptions"""
+    user_id: str
 
 
 # Specific Response Results
@@ -134,6 +156,27 @@ class KnowledgeUpdateResult(BaseModel):
     affected_responses: List[str] = Field(default_factory=list)
 
 
+class NewsletterSubscribeResult(BaseModel):
+    """Result of newsletter subscription"""
+    success: bool
+    subscription_id: str
+    message: str
+    unsubscribe_code: str
+
+
+class NewsletterUnsubscribeResult(BaseModel):
+    """Result of newsletter unsubscription"""
+    success: bool
+    message: str
+
+
+class GetNewsletterSubscriptionsResult(BaseModel):
+    """Result of getting newsletter subscriptions"""
+    success: bool
+    subscriptions: List[Dict[str, Any]] = Field(default_factory=list)
+    total_count: int
+
+
 # Top-Level Request/Response Models
 class APIRequest(BaseModel):
     """Top-level API request structure"""
@@ -147,7 +190,10 @@ class APIRequest(BaseModel):
         GetProfilePayload,
         AddFriendPayload,
         UpdateFriendPayload,
-        KnowledgeUpdatePayload
+        KnowledgeUpdatePayload,
+        NewsletterSubscribePayload,
+        NewsletterUnsubscribePayload,
+        GetNewsletterSubscriptionsPayload
     ]
 
     class Config:
@@ -166,7 +212,10 @@ class APIResponse(BaseModel):
         GetProfileResult,
         AddFriendResult,
         UpdateFriendResult,
-        KnowledgeUpdateResult
+        KnowledgeUpdateResult,
+        NewsletterSubscribeResult,
+        NewsletterUnsubscribeResult,
+        GetNewsletterSubscriptionsResult
     ]] = None
     error: Optional[str] = None
     error_code: Optional[str] = None

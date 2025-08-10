@@ -17,8 +17,8 @@ interface OnboardingStep {
 const steps: OnboardingStep[] = [
   { id: 'basic', title: 'Basic Information', description: 'Tell us about yourself' },
   { id: 'sources', title: 'Data Sources', description: 'Connect your accounts' },
-  { id: 'privacy', title: 'Privacy Settings', description: 'Configure friendship tiers' },
-  { id: 'review', title: 'Review & Launch', description: 'Finalize your profile' }
+  { id: 'privacy', title: 'Newsletter Settings', description: 'Configure privacy levels for subscribers' },
+  { id: 'review', title: 'Review & Launch', description: 'Start your newsletter' }
 ];
 
 export default function OnboardingPage() {
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
           {/* Progress Header */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-center text-foreground mb-8">
-              Create Your AI Profile
+              Set Up Your Newsletter
             </h1>
             
             <div className="flex justify-center mb-8">
@@ -180,7 +180,7 @@ export default function OnboardingPage() {
                   
                   <Textarea
                     label="Bio"
-                    placeholder="Tell us about yourself, your interests, and what you'd like to share with friends..."
+                    placeholder="Tell us about yourself, your interests, and what you'd like to share in your newsletters..."
                     value={basicInfo.bio}
                     onChange={(e) => setBasicInfo({...basicInfo, bio: e.target.value})}
                     rows={4}
@@ -189,7 +189,7 @@ export default function OnboardingPage() {
                   
                   <div className="bg-muted p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      Your AI will use this information to understand your personality and create personalized responses for your friends.
+                      Your AI will use this information to understand your personality and create personalized newsletter content for different subscriber groups.
                     </p>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="text-center mb-6">
                     <p className="text-muted-foreground">
-                      Select the accounts you&apos;d like to connect. Your AI will learn from these sources to provide better responses.
+                      Select the accounts you&apos;d like to connect. Your AI will learn from these sources to create engaging newsletter content about "how you been."
                     </p>
                   </div>
                   
@@ -250,7 +250,7 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="text-center mb-6">
                     <p className="text-muted-foreground">
-                      Configure how your AI shares information with different friend groups.
+                      Configure privacy levels for your newsletter subscribers. Each group will receive content appropriate to your relationship with them.
                     </p>
                   </div>
                   
@@ -274,7 +274,7 @@ export default function OnboardingPage() {
                   
                   <div className="bg-muted p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      These are default friendship tiers. You can customize them later and create up to 5 different levels.
+                      These are default subscriber privacy levels. Each level will get different newsletter subscription links, so you can share appropriate content with each group.
                     </p>
                   </div>
                 </div>
@@ -284,10 +284,10 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-semibold text-foreground mb-2">
-                      Your profile is ready!
+                      Your newsletter is ready!
                     </h3>
                     <p className="text-muted-foreground">
-                      Review your settings and launch your AI-powered profile.
+                      Review your settings and launch your personalized newsletter service.
                     </p>
                   </div>
                   
@@ -327,8 +327,8 @@ export default function OnboardingPage() {
                   
                   <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
                     <p className="text-sm text-foreground">
-                      <strong>Next steps:</strong> Your AI will process your information and create personalized responses. 
-                      You&apos;ll be able to share your profile URL with friends and start receiving natural conversations!
+                      <strong>Next steps:</strong> Your AI will process your information and create personalized newsletter content. 
+                      You&apos;ll be able to create subscription links for different privacy levels and start sharing "how you been" with friends and family!
                     </p>
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
               onClick={handleNext}
               disabled={!canProceed() || isLoading}
             >
-              {isLoading ? 'Processing...' : currentStep === steps.length - 1 ? 'Launch Profile' : 'Next'}
+              {isLoading ? 'Processing...' : currentStep === steps.length - 1 ? 'Launch Newsletter' : 'Next'}
             </Button>
           </div>
         </div>

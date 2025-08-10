@@ -22,3 +22,17 @@ class ContentType(str, Enum):
     DOCUMENT = "document"
 
 
+class NewsletterFrequency(str, Enum):
+    """Newsletter delivery frequency options"""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
+class SubscriptionStatus(str, Enum):
+    """Newsletter subscription status"""
+    ACTIVE = "active"
+    PAUSED = "paused"
+    UNSUBSCRIBED = "unsubscribed"
+
+

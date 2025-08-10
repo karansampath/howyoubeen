@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Header } from '@/components/layout/Header';
+import NewsletterManager from '@/components/newsletter/NewsletterManager';
 import { dummyUsers, dummyFriends, dummyTimeline, friendshipLevels } from '@/lib/dummy-data';
 
 export default function DashboardPage() {
@@ -35,6 +36,10 @@ export default function DashboardPage() {
   // Content upload state
   const [newContent, setNewContent] = useState('');
 
+  // Newsletter sending state
+  const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
+  const [newsletterSendResult, setNewsletterSendResult] = useState<string | null>(null);
+
   const handleLogout = () => {
     // In real app, clear auth state and redirect
     window.location.href = '/';
@@ -54,6 +59,35 @@ export default function DashboardPage() {
     setNewContent('');
   };
 
+  const sendNewsletterNow = async () => {
+    setIsSendingNewsletter(true);
+    setNewsletterSendResult(null);
+    
+    try {
+      // In real app, this would be the actual backend endpoint
+      const response = await fetch('/api/newsletter/admin/send-daily', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setNewsletterSendResult(`Newsletter sent successfully! Delivered to ${result.sent_count || 0} subscribers.`);
+      } else {
+        throw new Error('Failed to send newsletter');
+      }
+    } catch (error) {
+      console.error('Newsletter send error:', error);
+      setNewsletterSendResult('Failed to send newsletter. Please try again.');
+    } finally {
+      setIsSendingNewsletter(false);
+      // Clear the message after 5 seconds
+      setTimeout(() => setNewsletterSendResult(null), 5000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
       <Header user={user} onLogout={handleLogout} />
@@ -63,12 +97,35 @@ export default function DashboardPage() {
           
           {/* Header Section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Welcome back, {user.full_name}
-            </h1>
-            <p className="text-muted-foreground">
-              Manage your AI profile and see how friends are connecting with you
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">
+                  How you been, {user.full_name}?
+                </h1>
+                <p className="text-muted-foreground">
+                  Manage your newsletter, share updates, and keep friends in the loop
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <Button 
+                  size="lg"
+                  className="px-6 py-3"
+                  onClick={sendNewsletterNow}
+                  disabled={isSendingNewsletter}
+                >
+                  {isSendingNewsletter ? '⏳ Sending...' : '📧 Send Newsletter Now'}
+                </Button>
+                {newsletterSendResult && (
+                  <p className={`text-sm px-3 py-1 rounded ${
+                    newsletterSendResult.includes('successfully') 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {newsletterSendResult}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -91,11 +148,11 @@ export default function DashboardPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Monthly Chats</p>
+                    <p className="text-sm text-muted-foreground">Newsletters Sent</p>
                     <p className="text-2xl font-bold text-foreground">{stats.monthlyInteractions}</p>
                   </div>
                   <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                    <span className="text-secondary">💬</span>
+                    <span className="text-secondary">📬</span>
                   </div>
                 </div>
               </CardContent>
@@ -131,13 +188,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="newsletter" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="friends">Friends</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
+
+            {/* Newsletter Tab */}
+            <TabsContent value="newsletter" className="space-y-6">
+              <NewsletterManager userId={user.user_id} username={user.username} />
+            </TabsContent>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">

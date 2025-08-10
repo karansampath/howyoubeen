@@ -30,15 +30,15 @@ export default function Home() {
       <main className="container mx-auto px-6 py-16">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-            Meaningful Friendships
+            How You Been?
             <br />
-            <span className="text-primary">Through AI</span>
+            <span className="text-primary">Stay Connected</span>
           </h1>
           
           <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-            Stay connected with friends through AI-powered personal profiles. 
-            Share your life updates and let your AI help friends stay in touch 
-            without competing for attention.
+            Let friends know "how you been" through personalized newsletters. 
+            Your AI creates meaningful updates from your life events and shares them 
+            with the right people at the right privacy level.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
@@ -46,7 +46,7 @@ export default function Home() {
               href="/onboarding"
               className="px-8 py-4 bg-primary text-primary-foreground text-lg font-semibold rounded-xl hover:bg-accent transition-colors shadow-lg"
             >
-              Create Your Profile
+              Start Your Newsletter
             </Link>
             <Link
               href="#demo"
@@ -60,14 +60,14 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8 mt-20">
             <div className="bg-card/60 backdrop-blur-sm p-8 rounded-2xl border border-border hover:shadow-lg transition-shadow">
               <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <span className="text-2xl">🤖</span>
+                <span className="text-2xl">📧</span>
               </div>
               <h3 className="text-xl font-semibold text-card-foreground mb-3">
-                AI-Powered Profiles
+                Smart Newsletters
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Your personal AI learns about your life and shares updates 
-                with friends based on your privacy preferences.
+                Your AI crafts personalized newsletters from your life updates,
+                sharing the right content with the right people automatically.
               </p>
             </div>
 
@@ -76,24 +76,24 @@ export default function Home() {
                 <span className="text-2xl">🔒</span>
               </div>
               <h3 className="text-xl font-semibold text-card-foreground mb-3">
-                Privacy Control
+                Privacy Levels
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Configure friendship tiers and control exactly what 
-                information each friend level can access.
+                Different subscription links for family, friends, and acquaintances.
+                Control what each group knows about "how you been."
               </p>
             </div>
 
             <div className="bg-card/60 backdrop-blur-sm p-8 rounded-2xl border border-border hover:shadow-lg transition-shadow">
               <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <span className="text-2xl">💬</span>
+                <span className="text-2xl">⚡</span>
               </div>
               <h3 className="text-xl font-semibold text-card-foreground mb-3">
-                Natural Conversations
+                Effortless Updates
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Friends can chat naturally with your AI to stay updated 
-                without needing your direct attention.
+                Simply share your life events and let AI handle the rest.
+                No more manual updates or forgotten check-ins.
               </p>
             </div>
           </div>
@@ -110,48 +110,48 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h3 className="text-2xl font-semibold text-foreground mb-4">
-                For You (Person A)
+                Setting Up Your Newsletter
               </h3>
               <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start gap-3">
                   <span className="text-primary font-bold">1.</span>
-                  Complete AI-guided onboarding interview
+                  Complete the onboarding to train your AI
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary font-bold">2.</span>
-                  Connect data sources (LinkedIn, GitHub, Instagram)
+                  Share life updates, achievements, and thoughts
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary font-bold">3.</span>
-                  Configure friendship tiers and privacy levels
+                  Create privacy-level subscription links
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-primary font-bold">4.</span>
-                  Upload life updates and manage your AI
+                  Send newsletters manually or schedule automatically
                 </li>
               </ul>
             </div>
             
             <div>
               <h3 className="text-2xl font-semibold text-foreground mb-4">
-                For Your Friends
+                How Friends Stay Updated
               </h3>
               <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">1.</span>
-                  Visit your unique profile URL
+                  Use your subscription link to sign up
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">2.</span>
-                  Chat naturally with your AI assistant
+                  Choose their preferred frequency (daily/weekly/monthly)
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">3.</span>
-                  Get updates based on friendship level
+                  Receive personalized updates about "how you been"
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-secondary font-bold">4.</span>
-                  Subscribe to newsletters for regular updates
+                  Chat with your AI for more specific questions
                 </li>
               </ul>
             </div>
@@ -164,7 +164,7 @@ export default function Home() {
         <div className="container mx-auto px-6 text-center">
           <div className="text-2xl font-bold mb-4">KeepInTouch</div>
           <p className="text-muted mb-6">
-            Maintaining meaningful friendships through AI-powered connections
+            Stay connected with friends through personalized newsletters - let them know how you been
           </p>
           <div className="flex justify-center gap-8">
             <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>

@@ -8,7 +8,7 @@ python main.py
 
 import uvicorn
 
-from src.keepintouch.server.main import create_app
+from src.howyoubeen.server.main import create_app
 
 app = create_app()
 
