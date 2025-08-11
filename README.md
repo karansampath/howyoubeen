@@ -1,4 +1,9 @@
+# NOTE - This project is a demo, and in the current state does not work properly. Please use with caution.
+
+Built for the Applied AI Hackathon in SF on 08/10/2025 sponsored by OpenAI, Anthropic, Cognition, Modal, and Cerebras.
+
 # HowYouBeen - AI-Powered Social Connection Platform
+
 HowYouBeen.com helps people maintain meaningful friendships by creating AI-powered personal profiles that friends can interact with to stay updated on each other's lives.
  
 ## Key Features
