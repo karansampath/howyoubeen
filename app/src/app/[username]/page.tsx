@@ -87,9 +87,26 @@ export default function FriendChatPage({ params }: Props) {
     setIsLoading(true);
 
     try {
-      // Get AI response
+      // Get AI response using the new question endpoint
       const resolvedParams = await params;
-      const response = await api.sendMessage(resolvedParams.username, text, conversationId || undefined);
+      
+      // Convert conversation history to the new format
+      const conversationHistory = messages.slice(1).map(msg => ({
+        role: msg.sender === 'friend' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+      
+      // Use the user question endpoint which will get their life events/facts
+      const user = await api.getUser(resolvedParams.username);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      const response = await api.askQuestion({
+        user_id: user.user_id,
+        question: text,
+        conversation_history: conversationHistory
+      });
       
       if (!conversationId) {
         setConversationId(response.conversation_id);

@@ -64,6 +64,85 @@ export interface ChatResponse {
   suggested_questions: string[];
 }
 
+export interface LifeEventRequest {
+  user_id: string;
+  summary: string;
+  start_date?: string;
+  end_date?: string;
+  visibility?: string;
+  associated_docs?: string[];
+}
+
+export interface LifeEventResponse {
+  event_id: string;
+  user_id: string;
+  summary: string;
+  start_date: string;
+  end_date?: string;
+  visibility: string;
+  associated_docs: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LifeFactRequest {
+  user_id: string;
+  summary: string;
+  category?: string;
+  visibility?: string;
+  associated_docs?: string[];
+}
+
+export interface LifeFactResponse {
+  fact_id: string;
+  user_id: string;
+  summary: string;
+  category?: string;
+  visibility: string;
+  associated_docs: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewsletterConfigRequest {
+  user_id: string;
+  name: string;
+  description?: string;
+  frequency?: string;
+  privacy_level?: string;
+  is_active?: boolean;
+}
+
+export interface NewsletterConfigResponse {
+  config_id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  frequency: string;
+  privacy_level: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatQuestionRequest {
+  user_id: string;
+  question: string;
+  conversation_history?: ChatMessage[];
+  max_tokens?: number;
+}
+
+export interface ChatQuestionResponse {
+  response: string;
+  conversation_id: string;
+  suggested_questions: string[];
+}
+
 export class APIError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -239,6 +318,107 @@ class HowYouBeenAPI {
 
   async getUserSubscriptions(userId: string): Promise<{ subscriptions: any[]; total_count: number }> {
     return this.request<{ subscriptions: any[]; total_count: number }>(`/api/newsletter/subscriptions/${userId}`);
+  }
+
+  // Life Events API endpoints
+  async createLifeEvent(data: LifeEventRequest): Promise<LifeEventResponse> {
+    return this.request<LifeEventResponse>('/api/content/life-events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserLifeEvents(userId: string, limit: number = 50, offset: number = 0): Promise<LifeEventResponse[]> {
+    return this.request<LifeEventResponse[]>(`/api/content/life-events/${userId}?limit=${limit}&offset=${offset}`);
+  }
+
+  async getLifeEventsByDateRange(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    visibilityLevels?: string[]
+  ): Promise<LifeEventResponse[]> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    
+    if (visibilityLevels && visibilityLevels.length > 0) {
+      params.append('visibility_levels', visibilityLevels.join(','));
+    }
+
+    return this.request<LifeEventResponse[]>(`/api/content/life-events/${userId}/date-range?${params}`);
+  }
+
+  // Life Facts API endpoints
+  async createLifeFact(data: LifeFactRequest): Promise<LifeFactResponse> {
+    return this.request<LifeFactResponse>('/api/content/life-facts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserLifeFacts(userId: string, category?: string): Promise<LifeFactResponse[]> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    return this.request<LifeFactResponse[]>(`/api/content/life-facts/${userId}${params}`);
+  }
+
+  // Newsletter Configuration API endpoints
+  async createNewsletterConfig(data: NewsletterConfigRequest): Promise<NewsletterConfigResponse> {
+    return this.request<NewsletterConfigResponse>('/api/content/newsletter-configs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserNewsletterConfigs(userId: string): Promise<NewsletterConfigResponse[]> {
+    return this.request<NewsletterConfigResponse[]>(`/api/content/newsletter-configs/${userId}`);
+  }
+
+  // Search and Activity API endpoints
+  async searchUserContent(userId: string, query: string, contentTypes?: string[]): Promise<{
+    life_events?: LifeEventResponse[];
+    life_facts?: LifeFactResponse[];
+    documents?: any[];
+  }> {
+    const params = new URLSearchParams({ query });
+    
+    if (contentTypes && contentTypes.length > 0) {
+      params.append('content_types', contentTypes.join(','));
+    }
+
+    return this.request<any>(`/api/content/search/${userId}?${params}`);
+  }
+
+  async getUserActivitySummary(userId: string, days: number = 30): Promise<{
+    user_id: string;
+    days: number;
+    activity_counts: {
+      life_events: number;
+      life_facts: number;
+      documents: number;
+      total: number;
+    };
+    recent_items: {
+      life_events: LifeEventResponse[];
+      life_facts: LifeFactResponse[];
+      documents: any[];
+    };
+    total_counts: {
+      life_events: number;
+      life_facts: number;
+      documents: number;
+    };
+  }> {
+    return this.request<any>(`/api/content/activity-summary/${userId}?days=${days}`);
+  }
+
+  // AI Chat/Question API endpoint
+  async askQuestion(data: ChatQuestionRequest): Promise<ChatQuestionResponse> {
+    return this.request<ChatQuestionResponse>('/api/content/question', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Friends and timeline API endpoints

@@ -9,7 +9,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from .routes import onboarding, newsletter, user, chat, friends, auth
+from .routes import onboarding, newsletter, user, chat, friends, auth, content
 
 # Load environment variables
 load_dotenv()  # Load .env first

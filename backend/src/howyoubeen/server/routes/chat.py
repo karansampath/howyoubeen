@@ -1,114 +1,83 @@
-"""Chat API routes for AI conversations with friends"""
+"""
+Chat API routes for user profile conversations
+"""
+
+from typing import Dict, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
-import uuid
-from datetime import datetime
+from pydantic import BaseModel, Field
 
-from ...storage.storage_factory import get_storage_service, StorageService
-from ...data_models.api_models import ChatResponse
+from ...storage.storage_factory import get_storage_service
+from ...storage.storage_service import StorageService
 
-router = APIRouter()
+router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
-class ChatMessageRequest(BaseModel):
+# Request Models
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
+    conversation_history: List[ChatMessage] = Field(default_factory=list)
 
 
-def get_storage() -> StorageService:
-    """Get storage service dependency"""
+class ChatResponse(BaseModel):
+    response: str
+    conversation_id: str
+    suggested_questions: List[str] = Field(default_factory=list)
+
+
+# Dependencies
+async def get_storage() -> StorageService:
+    """Get storage service instance"""
     return get_storage_service()
 
 
-@router.post("/chat/{username}", response_model=ChatResponse)
-async def send_message(
+@router.post("/{username}", response_model=ChatResponse)
+async def chat_with_user(
     username: str,
-    request: ChatMessageRequest,
+    request: ChatRequest,
     storage: StorageService = Depends(get_storage)
-) -> ChatResponse:
-    """Send a message to user's AI and get response"""
+) -> Dict:
+    """Chat with a user's AI assistant using their username"""
     try:
-        # First verify user exists
+        # Get user by username
         user = await storage.get_user_by_username(username)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
         
-        # Generate conversation ID if not provided
-        conversation_id = request.conversation_id or f"conv_{uuid.uuid4().hex[:8]}"
+        user_id = user.get('id') or user.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=500, detail="User ID not found")
         
-        # For now, generate a simple AI response based on user data
-        # In production, this would use a proper AI service with the user's data
-        user_dict = user.__dict__ if hasattr(user, '__dict__') else dict(user)
-        full_name = user_dict.get("full_name", username)
-        bio = user_dict.get("bio", "")
+        # Forward to the content question endpoint logic
+        from .content import ChatQuestionRequest, ask_question
         
-        # Generate contextual response based on the question
-        message_lower = request.message.lower()
+        # Convert chat history format
+        conversation_history = []
+        for msg in request.conversation_history:
+            conversation_history.append({
+                "role": msg.role,
+                "content": msg.content
+            })
         
-        if any(word in message_lower for word in ["hello", "hi", "hey", "how are you"]):
-            response_text = f"Hi! I'm {full_name}'s AI assistant. I can tell you about their recent activities and updates. What would you like to know?"
-        elif any(word in message_lower for word in ["doing", "up to", "lately", "recent"]):
-            response_text = f"Based on what I know about {full_name}, they've been keeping busy with various projects and activities. {bio} What specific aspect of their life are you curious about?"
-        elif any(word in message_lower for word in ["work", "job", "project"]):
-            response_text = f"I can share information about {full_name}'s professional activities. They're always working on interesting projects. Is there something specific you'd like to know about their work?"
-        elif any(word in message_lower for word in ["hobby", "interest", "free time"]):
-            response_text = f"Outside of work, {full_name} has various interests and hobbies. {bio} Would you like to know more about any particular interest?"
-        else:
-            response_text = f"That's an interesting question about {full_name}! Based on their recent updates and activities, I'd say they've been focusing on personal growth and various projects. What specifically would you like to know more about?"
-        
-        # Generate contextual suggested questions
-        suggested_questions = [
-            f"What has {full_name} been working on lately?",
-            f"How is {full_name} doing?",
-            f"Tell me about {full_name}'s recent interests",
-            "What's new in their life?"
-        ]
-        
-        # Store conversation (simplified - in production would store full conversation)
-        # For now, just log that a conversation happened
-        print(f"Chat conversation {conversation_id}: {username} received message: {request.message}")
-        
-        return ChatResponse(
-            response=response_text,
-            conversation_id=conversation_id,
-            suggested_questions=suggested_questions
+        question_request = ChatQuestionRequest(
+            user_id=user_id,
+            question=request.message,
+            conversation_history=conversation_history
         )
         
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
-
-
-@router.get("/chat/{username}/suggestions")
-async def get_suggested_questions(
-    username: str,
-    storage: StorageService = Depends(get_storage)
-) -> Dict[str, List[str]]:
-    """Get suggested questions for chatting with user's AI"""
-    try:
-        # Verify user exists
-        user = await storage.get_user_by_username(username)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        # Use the content endpoint logic
+        response = await ask_question(question_request, storage)
         
-        user_dict = user.__dict__ if hasattr(user, '__dict__') else dict(user)
-        full_name = user_dict.get("full_name", username)
-        
-        suggestions = [
-            f"How has {full_name} been doing lately?",
-            f"What's {full_name} working on these days?",
-            f"Tell me about {full_name}'s recent activities",
-            f"What are {full_name}'s current interests?",
-            "Any recent updates or achievements?",
-            "What's new in their life?"
-        ]
-        
-        return {"suggestions": suggestions}
+        return response
         
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

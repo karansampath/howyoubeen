@@ -153,21 +153,21 @@ class SupabaseStorageService(StorageService):
         """Get visibility categories for a user"""
         return await self.visibility_repo.get_categories_for_user(user_id)
     
-    # User Content (Diary Entries & Life Facts)
-    async def create_diary_entry(self, entry_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a diary entry"""
+    # User Content (Life Events & Life Facts)
+    async def create_life_event(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a life event"""
         try:
-            response = (self.client.table("diary_entries")
-                       .insert(entry_data)
+            response = (self.client.table("life_events")
+                       .insert(event_data)
                        .execute())
             
             if response.data:
                 return response.data[0]
             else:
-                raise Exception("Failed to create diary entry")
+                raise Exception("Failed to create life event")
                 
         except Exception as e:
-            logger.error(f"Error creating diary entry: {e}")
+            logger.error(f"Error creating life event: {e}")
             raise
     
     async def create_life_fact(self, fact_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -309,10 +309,10 @@ class SupabaseStorageService(StorageService):
         return await self.visibility_repo.create_default_categories(user_id)
     
     # Query Methods
-    async def get_diary_entries_for_user(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
-        """Get diary entries for a user"""
+    async def get_life_events_for_user(self, user_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """Get life events for a user"""
         try:
-            response = (self.client.table("diary_entries")
+            response = (self.client.table("life_events")
                        .select("*")
                        .eq("user_id", user_id)
                        .order("created_at", desc=True)
@@ -426,7 +426,7 @@ class SupabaseStorageService(StorageService):
                                  .execute())
             
             # Get recent items
-            recent_entries = await self.get_diary_entries_for_user(user_id, limit=3)
+            recent_entries = await self.get_life_events_for_user(user_id, limit=3)
             recent_facts = await self.get_life_facts_for_user(user_id)
             recent_docs = await self.get_documents_for_user(user_id)
             

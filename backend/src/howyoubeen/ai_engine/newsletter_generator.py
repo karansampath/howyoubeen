@@ -76,24 +76,25 @@ class NewsletterGenerator:
             end_date = datetime.now()
             start_date = newsletter_config.start_date
             
-            # If periodicity is specified, use it to calculate the time window
+            # If periodicity is specified, use it to look back from now
             if newsletter_config.periodicity > 0:
-                # Calculate how many periods have passed since start_date
-                hours_since_start = int((end_date - start_date).total_seconds() / 3600)
-                periods_passed = hours_since_start // newsletter_config.periodicity
-                
-                # Get events from the most recent period
-                period_start = start_date + timedelta(hours=periods_passed * newsletter_config.periodicity)
-                period_end = start_date + timedelta(hours=(periods_passed + 1) * newsletter_config.periodicity)
-                
-                # Use the period end as the actual end date (but not beyond now)
-                start_date = period_start
-                end_date = min(period_end, end_date)
+                # Look back by the periodicity amount from now
+                start_date = end_date - timedelta(hours=newsletter_config.periodicity)
+                # end_date stays as now
             
             logger.info(f"Querying life events from {start_date} to {end_date}")
             
             # Extract visibility level types for filtering
-            visibility_levels = [vc.type.value for vc in newsletter_config.visibility]
+            visibility_levels = []
+            for vc in newsletter_config.visibility:
+                if hasattr(vc.type, 'value'):
+                    visibility_levels.append(vc.type.value)
+                else:
+                    visibility_levels.append(str(vc.type))
+            
+            # Debug logging can be enabled for troubleshooting
+            # print(f"🔍 Newsletter Debug: Querying events from {start_date} to {end_date}")
+            # print(f"🔍 Newsletter Debug: Visibility levels: {visibility_levels}")
             
             # Get life events within the date range
             life_events = await self.storage_service.get_life_events_by_date_range(
