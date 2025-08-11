@@ -55,7 +55,7 @@ class NewsletterGenerator:
         self.storage_service = storage_service
         
         # Get LLM configuration from environment
-        self.default_model = os.getenv("NEWSLETTER_LLM_MODEL", "gpt-3.5-turbo")
+        self.default_model = os.getenv("NEWSLETTER_LLM_MODEL", "claude-sonnet-4-20250514")
         self.temperature = float(os.getenv("NEWSLETTER_LLM_TEMPERATURE", "0.7"))
         self.max_tokens = int(os.getenv("NEWSLETTER_LLM_MAX_TOKENS", "2000"))
         

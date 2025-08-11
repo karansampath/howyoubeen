@@ -15,7 +15,7 @@ import anthropic
 from ...storage.storage_factory import get_storage_service
 from ...storage.storage_service import StorageService
 
-router = APIRouter(prefix="/api/content", tags=["content"])
+router = APIRouter(prefix="/content", tags=["content"])
 
 logger = logging.getLogger(__name__)
 

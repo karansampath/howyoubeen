@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
     # Add newsletter routes
     app.include_router(
         newsletter.router,
-        prefix="/api/newsletter",
+        prefix="/api",
         tags=["newsletter"]
     )
     
