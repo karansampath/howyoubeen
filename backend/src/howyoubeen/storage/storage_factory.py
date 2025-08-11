@@ -56,8 +56,16 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
     
     # Fall back to local storage
     logger.info("No Supabase configuration found, using local storage")
+    # Use consistent backup file location if not specified
+    backup_file = os.getenv("LOCAL_STORAGE_BACKUP")
+    temp_dir = os.getenv("LOCAL_STORAGE_TEMP_DIR")
+    
+    if not backup_file:
+        # Use a consistent default backup location
+        backup_file = "storage/data/backup.json"
+        logger.info(f"Using default backup file: {backup_file}")
+    
     return LocalStorageService(
-        storage_root=os.getenv("LOCAL_STORAGE_ROOT")
     )
 
 

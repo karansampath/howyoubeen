@@ -9,7 +9,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from .routes import onboarding, newsletter, user, chat, friends, content
+from .routes import onboarding, newsletter, user, chat, friends, auth, content
 
 # Load environment variables
 load_dotenv()  # Load .env first
@@ -38,6 +38,13 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    
+    # Add authentication routes
+    app.include_router(
+        auth.router,
+        prefix="/api/auth",
+        tags=["authentication"]
     )
     
     # Use unified onboarding routes with automatic storage backend detection
@@ -74,6 +81,13 @@ def create_app() -> FastAPI:
         friends.router,
         prefix="/api",
         tags=["friends"]
+    )
+    
+    # Add content routes for life events, life facts, and newsletter configurations
+    app.include_router(
+        content.router,
+        prefix="/api/content",
+        tags=["content"]
     )
     
     # Serve static files (frontend)

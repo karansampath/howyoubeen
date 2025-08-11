@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Header } from '@/components/layout/Header';
+import { AuthenticatedHeader } from '@/components/layout/AuthenticatedHeader';
 import NewsletterManager from '@/components/newsletter/NewsletterManager';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/components/auth/AuthContext';
 import { api, type User } from '@/lib/api';
 // Define types and friendship levels locally
 interface Friend {
@@ -61,6 +63,7 @@ const friendshipLevels = {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,30 +83,40 @@ function DashboardContent() {
         setIsLoading(true);
         setError(null);
         
-        // Get username from URL params (from onboarding) or localStorage
-        const usernameFromUrl = searchParams.get('user');
-        const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
-        const currentUsername = usernameFromUrl || usernameFromStorage;
+        // Priority: 1) Authenticated user, 2) URL param (onboarding), 3) localStorage
+        let currentUser: User | null = null;
         
-        if (!currentUsername) {
-          setError('No authenticated user found. Please complete onboarding.');
-          return;
+        if (authUser) {
+          // Use authenticated user data directly
+          currentUser = authUser;
+          setUser(currentUser);
+        } else {
+          // Fallback to onboarding flow
+          const usernameFromUrl = searchParams?.get('user');
+          const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
+          const currentUsername = usernameFromUrl || usernameFromStorage;
+          
+          if (!currentUsername) {
+            setError('No authenticated user found. Please complete onboarding or login.');
+            return;
+          }
+          
+          // Store username for future use
+          if (typeof window !== 'undefined' && usernameFromUrl) {
+            localStorage.setItem('currentUsername', usernameFromUrl);
+          }
+          
+          const userData = await api.getUser(currentUsername);
+          currentUser = userData;
         }
-        
-        // Store username for future use
-        if (typeof window !== 'undefined' && usernameFromUrl) {
-          localStorage.setItem('currentUsername', usernameFromUrl);
-        }
-        
-        const userData = await api.getUser(currentUsername);
-        if (userData) {
-          setUser(userData);
+        if (currentUser) {
+          setUser(currentUser);
           
           // Load friends and timeline data from real API
           try {
             const [friendsData, timelineData] = await Promise.all([
-              api.getUserFriends(userData.user_id),
-              api.getUserTimeline(userData.username)
+              api.getUserFriends(currentUser.user_id),
+              api.getUserTimeline(currentUser.username)
             ]);
             setFriends(friendsData);
             setTimeline(timelineData);
@@ -124,7 +137,7 @@ function DashboardContent() {
     };
 
     loadDashboardData();
-  }, [searchParams]);
+  }, [searchParams, authUser]);
 
   // Add friend modal state
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
@@ -210,7 +223,7 @@ function DashboardContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-        <Header user={null} onLogout={handleLogout} />
+        <AuthenticatedHeader />
         <div className="container mx-auto px-6 py-8 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -225,7 +238,7 @@ function DashboardContent() {
   if (error || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-        <Header user={null} onLogout={handleLogout} />
+        <AuthenticatedHeader />
         <div className="container mx-auto px-6 py-8 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error || 'Failed to load user data'}</p>
@@ -245,7 +258,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-      <Header user={user} onLogout={handleLogout} />
+      <AuthenticatedHeader />
       
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
@@ -635,7 +648,7 @@ function DashboardContent() {
 function DashboardPageFallback() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-      <Header user={null} onLogout={() => {}} />
+      <AuthenticatedHeader />
       <div className="container mx-auto px-6 py-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -648,8 +661,10 @@ function DashboardPageFallback() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardPageFallback />}>
-      <DashboardContent />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={<DashboardPageFallback />}>
+        <DashboardContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

@@ -5,6 +5,25 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 
+// Auth related interfaces
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  full_name: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  expires_in: number;
+}
+
 export interface OnboardingSessionResponse {
   session_id: string;
   current_step: number;
@@ -133,9 +152,31 @@ export class APIError extends Error {
 
 class HowYouBeenAPI {
   private baseURL: string;
+  private authToken: string | null = null;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
+    // Load token from localStorage if available
+    if (typeof window !== 'undefined') {
+      this.authToken = localStorage.getItem('auth_token');
+    }
+  }
+
+  // Set authentication token
+  setAuthToken(token: string | null) {
+    this.authToken = token;
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('auth_token', token);
+      } else {
+        localStorage.removeItem('auth_token');
+      }
+    }
+  }
+
+  // Get current auth token
+  getAuthToken(): string | null {
+    return this.authToken;
   }
 
   private async request<T>(
@@ -144,11 +185,18 @@ class HowYouBeenAPI {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {}),
+    };
+
+    // Add authorization header if token is available
+    if (this.authToken) {
+      headers.Authorization = `Bearer ${this.authToken}`;
+    }
+    
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
@@ -386,6 +434,73 @@ class HowYouBeenAPI {
     return this.request<{ success: boolean; message: string; entry_id: string }>(`/api/users/${userId}/content`, {
       method: 'POST',
       body: JSON.stringify({ content }),
+    });
+  }
+
+  // Authentication API endpoints
+  async login(request: LoginRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    
+    // Store token after successful login
+    this.setAuthToken(response.token);
+    
+    return response;
+  }
+
+  async register(request: RegisterRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    
+    // Store token after successful registration
+    this.setAuthToken(response.token);
+    
+    return response;
+  }
+
+  async getCurrentUser(): Promise<{ user: User }> {
+    return this.request<{ user: User }>('/api/auth/me');
+  }
+
+  async logout(): Promise<{ message: string }> {
+    try {
+      const response = await this.request<{ message: string }>('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      // Clear token after logout
+      this.setAuthToken(null);
+      
+      return response;
+    } catch (error) {
+      // Clear token even if logout request fails
+      this.setAuthToken(null);
+      throw error;
+    }
+  }
+
+  async refreshToken(): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/auth/refresh', {
+      method: 'POST',
+    });
+    
+    // Update stored token
+    this.setAuthToken(response.token);
+    
+    return response;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
     });
   }
 }

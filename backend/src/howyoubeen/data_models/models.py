@@ -146,6 +146,7 @@ class User(BaseModel):
     user_id: str = Field(default_factory=generate_uuid)
     username: str
     email: str
+    password_hash: Optional[str] = None  # Optional for backward compatibility
     full_name: str
     google_account_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.now)

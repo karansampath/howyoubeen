@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthContext';
+import { useRouter } from 'next/navigation';
+import { APIError } from '@/lib/api';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -12,17 +15,29 @@ export default function LoginPage() {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate login - in real app, authenticate with backend
-    setTimeout(() => {
-      console.log('Login attempt:', formData);
-      // For demo, redirect to dashboard
-      window.location.href = '/dashboard';
-    }, 1000);
+    try {
+      await login(formData.email, formData.password);
+      
+      // Redirect to dashboard after successful login
+      router.push('/dashboard');
+    } catch (err) {
+      if (err instanceof APIError) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDemoLogin = () => {
@@ -51,6 +66,11 @@ export default function LoginPage() {
               <CardTitle className="text-center">Welcome Back</CardTitle>
             </CardHeader>
             <CardContent>
+              {error && (
+                <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                  {error}
+                </div>
+              )}
               <form onSubmit={handleLogin} className="space-y-4">
                 <Input
                   label="Email"
@@ -102,8 +122,8 @@ export default function LoginPage() {
               <div className="mt-6 text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
                   Don&apos;t have an account?{' '}
-                  <Link href="/onboarding" className="text-primary hover:underline">
-                    Get started
+                  <Link href="/register" className="text-primary hover:underline">
+                    Sign up
                   </Link>
                 </p>
                 <p className="text-sm text-muted-foreground">
