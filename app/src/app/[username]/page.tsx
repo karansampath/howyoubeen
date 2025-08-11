@@ -92,7 +92,7 @@ export default function FriendChatPage({ params }: Props) {
       
       // Convert conversation history to the new format
       const conversationHistory = messages.slice(1).map(msg => ({
-        role: msg.sender === 'friend' ? 'user' : 'assistant',
+        role: msg.sender === 'friend' ? 'user' as const : 'assistant' as const,
         content: msg.content
       }));
       

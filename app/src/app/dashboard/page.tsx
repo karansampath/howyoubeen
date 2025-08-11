@@ -63,6 +63,7 @@ const friendshipLevels = {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,30 +83,40 @@ function DashboardContent() {
         setIsLoading(true);
         setError(null);
         
-        // Get username from URL params (from onboarding) or localStorage
-        const usernameFromUrl = searchParams.get('user');
-        const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
-        const currentUsername = usernameFromUrl || usernameFromStorage;
+        // Priority: 1) Authenticated user, 2) URL param (onboarding), 3) localStorage
+        let currentUser: User | null = null;
         
-        if (!currentUsername) {
-          setError('No authenticated user found. Please complete onboarding.');
-          return;
+        if (authUser) {
+          // Use authenticated user data directly
+          currentUser = authUser;
+          setUser(currentUser);
+        } else {
+          // Fallback to onboarding flow
+          const usernameFromUrl = searchParams?.get('user');
+          const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
+          const currentUsername = usernameFromUrl || usernameFromStorage;
+          
+          if (!currentUsername) {
+            setError('No authenticated user found. Please complete onboarding or login.');
+            return;
+          }
+          
+          // Store username for future use
+          if (typeof window !== 'undefined' && usernameFromUrl) {
+            localStorage.setItem('currentUsername', usernameFromUrl);
+          }
+          
+          const userData = await api.getUser(currentUsername);
+          currentUser = userData;
         }
-        
-        // Store username for future use
-        if (typeof window !== 'undefined' && usernameFromUrl) {
-          localStorage.setItem('currentUsername', usernameFromUrl);
-        }
-        
-        const userData = await api.getUser(currentUsername);
-        if (userData) {
-          setUser(userData);
+        if (currentUser) {
+          setUser(currentUser);
           
           // Load friends and timeline data from real API
           try {
             const [friendsData, timelineData] = await Promise.all([
-              api.getUserFriends(userData.user_id),
-              api.getUserTimeline(userData.username)
+              api.getUserFriends(currentUser.user_id),
+              api.getUserTimeline(currentUser.username)
             ]);
             setFriends(friendsData);
             setTimeline(timelineData);
@@ -126,7 +137,7 @@ function DashboardContent() {
     };
 
     loadDashboardData();
-  }, [searchParams]);
+  }, [searchParams, authUser]);
 
   // Add friend modal state
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);

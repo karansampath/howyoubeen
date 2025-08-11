@@ -83,6 +83,13 @@ def create_app() -> FastAPI:
         tags=["friends"]
     )
     
+    # Add content routes for life events, life facts, and newsletter configurations
+    app.include_router(
+        content.router,
+        prefix="/api/content",
+        tags=["content"]
+    )
+    
     # Serve static files (frontend)
     static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "static")
     if os.path.exists(static_dir):

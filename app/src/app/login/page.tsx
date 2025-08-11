@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 import { APIError } from '@/lib/api';
 
 export default function LoginPage() {
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function LoginPage() {
       await login(formData.email, formData.password);
       
       // Redirect to dashboard after successful login
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.message);

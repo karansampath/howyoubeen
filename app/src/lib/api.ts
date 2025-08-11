@@ -439,7 +439,7 @@ class HowYouBeenAPI {
 
   // Authentication API endpoints
   async login(request: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/login', {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -451,7 +451,7 @@ class HowYouBeenAPI {
   }
 
   async register(request: RegisterRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/register', {
+    const response = await this.request<AuthResponse>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -463,12 +463,12 @@ class HowYouBeenAPI {
   }
 
   async getCurrentUser(): Promise<{ user: User }> {
-    return this.request<{ user: User }>('/auth/me');
+    return this.request<{ user: User }>('/api/auth/me');
   }
 
   async logout(): Promise<{ message: string }> {
     try {
-      const response = await this.request<{ message: string }>('/auth/logout', {
+      const response = await this.request<{ message: string }>('/api/auth/logout', {
         method: 'POST',
       });
       
@@ -484,7 +484,7 @@ class HowYouBeenAPI {
   }
 
   async refreshToken(): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/refresh', {
+    const response = await this.request<AuthResponse>('/api/auth/refresh', {
       method: 'POST',
     });
     
@@ -495,7 +495,7 @@ class HowYouBeenAPI {
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/auth/change-password', {
+    return this.request<{ message: string }>('/api/auth/change-password', {
       method: 'POST',
       body: JSON.stringify({
         current_password: currentPassword,

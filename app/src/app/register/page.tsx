@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 import { APIError } from '@/lib/api';
 
 export default function RegisterPage() {
@@ -19,6 +20,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register } = useAuth();
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ export default function RegisterPage() {
       await register(formData.username, formData.email, formData.password, formData.fullName);
       
       // Redirect to dashboard after successful registration
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.message);
