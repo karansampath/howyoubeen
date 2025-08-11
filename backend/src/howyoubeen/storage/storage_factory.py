@@ -38,6 +38,7 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
         if force_backend.lower() == "local":
             logger.info("Using forced local storage backend")
             return LocalStorageService()
+            return LocalStorageService()
         elif force_backend.lower() == "supabase":
             logger.info("Using forced Supabase storage backend")
             return SupabaseStorageService(use_service_key=True)
@@ -157,6 +158,7 @@ def create_storage_from_config(config: dict) -> StorageService:
         local_config = config.get("local", {})
         logger.info("Creating local storage from config")
         return LocalStorageService(
+            storage_root=local_config.get("storage_root")
             storage_root=local_config.get("storage_root")
         )
     

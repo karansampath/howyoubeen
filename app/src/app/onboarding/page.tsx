@@ -31,6 +31,8 @@ export default function OnboardingPage() {
     fullName: '',
     username: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     bio: ''
   });
   
@@ -46,11 +48,8 @@ export default function OnboardingPage() {
   ];
 
   const dataSources = [
-    { id: 'linkedin', name: 'LinkedIn', description: 'Professional profile and connections' },
     { id: 'github', name: 'GitHub', description: 'Code repositories and projects' },
-    { id: 'instagram', name: 'Instagram', description: 'Photos and social updates' },
-    { id: 'goodreads', name: 'Goodreads', description: 'Reading list and book reviews' },
-    { id: 'google_photos', name: 'Google Photos', description: 'Photos and memories' }
+    { id: 'website', name: 'Personal Website', description: 'Scrape content from any website or blog' }
   ];
 
   const handleNext = async () => {

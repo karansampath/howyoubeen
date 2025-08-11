@@ -19,6 +19,13 @@ from ..storage.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_NEWSLETTER_CONFIG = NewsletterConfig(
+    instructions="Summarize the major life events of the past week as you would to friends.",
+    periodicity=168, 
+    name="Default", 
+    start_date=None,
+    visibility=[VisibilityCategory(type=VisibilityCategoryType.GOOD_FRIENDS)]
+)
 
 class NewsletterGenerationRequest(BaseModel):
     """Request payload for newsletter generation"""
@@ -57,7 +64,7 @@ class NewsletterGenerator:
     async def generate_newsletter(
         self, 
         user_id: str, 
-        newsletter_config: NewsletterConfig
+        newsletter_config: NewsletterConfig = None
     ) -> NewsletterGenerationResult:
         """
         Generate a newsletter based on user's life events and configuration
@@ -71,16 +78,11 @@ class NewsletterGenerator:
         """
         try:
             logger.info(f"Generating newsletter for user {user_id} with config: {newsletter_config.name}")
-            
+            if not newsletter_config:
+                newsletter_config = DEFAULT_NEWSLETTER_CONFIG
             # Calculate date range based on periodicity
             end_date = datetime.now()
-            start_date = newsletter_config.start_date
-            
-            # If periodicity is specified, use it to look back from now
-            if newsletter_config.periodicity > 0:
-                # Look back by the periodicity amount from now
-                start_date = end_date - timedelta(hours=newsletter_config.periodicity)
-                # end_date stays as now
+            start_date = end_date - timedelta(hours=newsletter_config.periodicity)
             
             logger.info(f"Querying life events from {start_date} to {end_date}")
             
