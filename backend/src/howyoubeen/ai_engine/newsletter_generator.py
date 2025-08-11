@@ -198,7 +198,7 @@ User Context:
 - Bio: {user_data.get('bio', 'No bio available')}
 - Newsletter Name: {newsletter_config.name}
 
-Please generate a well-formatted markdown newsletter following the user's instructions. If there are no life events, create a brief, friendly message acknowledging the quiet period."""
+Please generate a well-formatted markdown newsletter following the user's instructions. If there are no life events, create a brief, friendly message acknowledging the quiet period. This is from the user to their friends, frame it in the first person from the user's perspective, and be friendly and engaging."""
         
         try:
             logger.info(f"Calling LLM with model: {self.default_model}")

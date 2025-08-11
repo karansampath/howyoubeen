@@ -463,16 +463,31 @@ function DashboardContent() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">User Facts</p>
+                    <p className="text-2xl font-bold text-foreground">{lifeFacts.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600">💡</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="newsletter" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="friends">Friends</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="life-events">Life Events</TabsTrigger>
+              <TabsTrigger value="user-facts">User Facts</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
@@ -806,6 +821,74 @@ function DashboardContent() {
                     <div className="mt-6 pt-6 border-t">
                       <p className="text-sm text-muted-foreground text-center">
                         💡 These events are automatically processed from your content and used to generate personalized newsletters
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* User Facts Tab */}
+            <TabsContent value="user-facts" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    User Facts
+                    <Badge variant="outline">{lifeFacts.length} facts</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {lifeFacts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-lg mb-2">💡 No user facts yet</p>
+                        <p>Add content to create your user facts collection</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {lifeFacts.map((fact: any) => (
+                          <div key={fact.fact_id} className="p-4 border border-border rounded-lg">
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="font-medium text-foreground">{fact.summary}</h3>
+                              <div className="flex items-center gap-2">
+                                {fact.category && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {fact.category}
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-xs">
+                                  {fact.visibility || 'public'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(fact.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {fact.description && (
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {fact.description}
+                              </p>
+                            )}
+                            
+                            {fact.associated_docs && fact.associated_docs.length > 0 && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs text-muted-foreground">Documents:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {fact.associated_docs.length} attached
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {lifeFacts.length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <p className="text-sm text-muted-foreground text-center">
+                        💡 These facts are automatically processed from your content and represent key information about you
                       </p>
                     </div>
                   )}

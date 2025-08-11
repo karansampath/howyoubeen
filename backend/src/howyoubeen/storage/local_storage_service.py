@@ -633,7 +633,13 @@ class LocalStorageService(StorageService):
                 
             # Check visibility level if specified
             if visibility_levels:
-                visibility_type = entry.get("visibility", {}).get("type")
+                visibility = entry.get("visibility")
+                if isinstance(visibility, dict):
+                    visibility_type = visibility.get("type")
+                else:
+                    # Handle simple string visibility format
+                    visibility_type = visibility
+                
                 if visibility_type not in visibility_levels:
                     continue
                     
