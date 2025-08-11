@@ -59,18 +59,27 @@ async def generate_newsletter(
         # Parse visibility categories
         visibility_categories = []
         for vis_config in config_data.get("visibility", []):
-            visibility_categories.append(
-                VisibilityCategory(
-                    type=VisibilityCategoryType(vis_config.get("type")),
-                    name=vis_config.get("name")
+            if isinstance(vis_config, dict):
+                visibility_categories.append(
+                    VisibilityCategory(
+                        type=VisibilityCategoryType(vis_config.get("type")),
+                        name=vis_config.get("name")
+                    )
                 )
-            )
+            else:
+                # Handle case where vis_config is a string
+                visibility_categories.append(
+                    VisibilityCategory(
+                        type=VisibilityCategoryType(vis_config),
+                        name=None
+                    )
+                )
         
         # Create NewsletterConfig object
         newsletter_config = NewsletterConfig(
             instructions=config_data.get("instructions"),
             periodicity=config_data.get("periodicity", 24),  # Default to 24 hours
-            start_date=datetime.fromisoformat(config_data.get("start_date")),
+            start_date=datetime.fromisoformat(config_data.get("start_date")) if config_data.get("start_date") else None,
             visibility=visibility_categories,
             name=config_data.get("name", "Newsletter")
         )

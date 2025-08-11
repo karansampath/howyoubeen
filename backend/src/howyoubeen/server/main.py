@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
     # Add content routes for life events, life facts, and newsletter configurations
     app.include_router(
         content.router,
-        prefix="/api/content",
+        prefix="/api",
         tags=["content"]
     )
     

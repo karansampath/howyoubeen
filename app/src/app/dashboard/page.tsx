@@ -89,24 +89,27 @@ function DashboardContent() {
         
         if (currentUser) {
           
-          // Load friends, timeline, subscription, and life events data from real API
+          // Load friends, timeline, subscription, life events, and life facts data from real API
           try {
-            const [friendsData, timelineData, subscriptionsData, lifeEventsData] = await Promise.all([
+            const [friendsData, timelineData, subscriptionsData, lifeEventsData, lifeFactsData] = await Promise.all([
               api.getUserFriends(currentUser.user_id),
               api.getUserTimeline(currentUser.username),
               api.getUserSubscriptions(currentUser.user_id).catch(() => ({ subscriptions: [] })),
-              api.getUserLifeEvents(currentUser.user_id).catch(() => [])
+              api.getUserLifeEvents(currentUser.user_id).catch(() => []),
+              api.getUserLifeFacts(currentUser.user_id).catch(() => [])
             ]);
             setFriends(friendsData);
             setTimeline(timelineData);
             setSubscriberCount(subscriptionsData.subscriptions?.length || 0);
             setLifeEvents(lifeEventsData);
+            setLifeFacts(lifeFactsData);
           } catch (apiError) {
             console.warn('Failed to load some data, using empty arrays:', apiError);
             setFriends([]);
             setTimeline([]);
             setSubscriberCount(0);
             setLifeEvents([]);
+            setLifeFacts([]);
           }
         } else {
           setError('User not found');
@@ -141,6 +144,7 @@ function DashboardContent() {
   const [newsletterGenerationResult, setNewsletterGenerationResult] = useState<string | null>(null);
   const [newsletterSendResult, setNewsletterSendResult] = useState<string | null>(null);
   const [lifeEvents, setLifeEvents] = useState<any[]>([]);
+  const [lifeFacts, setLifeFacts] = useState<any[]>([]);
 
   // Data source connection state
   const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
@@ -403,7 +407,7 @@ function DashboardContent() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="grid md:grid-cols-5 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
