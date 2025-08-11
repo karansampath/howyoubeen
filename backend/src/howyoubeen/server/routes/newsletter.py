@@ -12,7 +12,11 @@ from ...data_models.api_models import (
     NewsletterSubscribeResult,
     NewsletterUnsubscribeResult,
     GetNewsletterSubscriptionsResult,
-    NewsletterGenerateResult
+    NewsletterGenerateResult,
+    CreateReferralLinkPayload,
+    CreateReferralLinkResult,
+    GetReferralLinksPayload,
+    GetReferralLinksResult
 )
 from ...data_models.enums import NewsletterFrequency, VisibilityCategoryType
 from ...data_models.models import NewsletterConfig, VisibilityCategory
@@ -101,7 +105,8 @@ async def subscribe_to_newsletter(
             privacy_code=payload.privacy_code,
             subscriber_email=payload.subscriber_email,
             frequency=payload.frequency,
-            subscriber_name=payload.subscriber_name
+            subscriber_name=payload.subscriber_name,
+            referral_code=payload.referral_code
         )
         
         if result["success"]:
@@ -241,5 +246,74 @@ async def send_monthly_newsletters(
     try:
         result = await newsletter_service.send_newsletters_by_frequency(NewsletterFrequency.MONTHLY)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Referral Link Endpoints
+@router.post("/create-referral-link", response_model=CreateReferralLinkResult)
+async def create_referral_link(
+    payload: CreateReferralLinkPayload,
+    newsletter_service = Depends(get_newsletter_service)
+) -> CreateReferralLinkResult:
+    """Create a referral link for a friend"""
+    
+    try:
+        result = await newsletter_service.create_referral_link(
+            user_id=payload.user_id,
+            created_by_user_id=payload.created_by_user_id,
+            friend_name=payload.friend_name,
+            privacy_level=VisibilityCategoryType(payload.privacy_level),
+            friend_email=payload.friend_email,
+            expires_at=payload.expires_at
+        )
+        
+        return CreateReferralLinkResult(
+            success=result["success"],
+            referral_link=result["referral_link"],
+            referral_code=result["referral_code"],
+            message=result["message"]
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/referral-links/{created_by_user_id}", response_model=GetReferralLinksResult)
+async def get_referral_links(
+    created_by_user_id: str,
+    newsletter_service = Depends(get_newsletter_service)
+) -> GetReferralLinksResult:
+    """Get all referral links created by a user"""
+    
+    try:
+        referral_links = await newsletter_service.get_user_referral_links(created_by_user_id)
+        
+        return GetReferralLinksResult(
+            success=True,
+            referral_links=referral_links,
+            total_count=len(referral_links)
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/referrals/{user_id}")
+async def get_user_referrals(
+    user_id: str,
+    newsletter_service = Depends(get_newsletter_service)
+) -> Dict[str, Any]:
+    """Get all subscribers referred for a user's newsletter"""
+    
+    try:
+        referrals = await newsletter_service.get_referrals_for_user(user_id)
+        
+        return {
+            "success": True,
+            "referrals": referrals,
+            "total_count": len(referrals)
+        }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

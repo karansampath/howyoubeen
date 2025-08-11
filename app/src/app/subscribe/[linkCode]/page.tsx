@@ -68,7 +68,8 @@ async function SubscribePageContent({ linkCode }: { linkCode: string }) {
         privacy_code: linkCode,
         subscriber_email: data.email,
         frequency: data.frequency,
-        subscriber_name: data.name
+        subscriber_name: data.name,
+        referral_code: linkCode // The linkCode might be a referral code instead of privacy code
       });
       
       return result;

@@ -69,12 +69,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
-  const [stats] = useState({
-    totalFriends: 2,
-    monthlyInteractions: 15,
-    profileViews: 28,
-    newsletterSubscribers: 1
-  });
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   // Load user data and related info
   useEffect(() => {
@@ -89,23 +84,29 @@ function DashboardContent() {
           return;
         }
         
-        let currentUser: User | null = authUser;
+        const currentUser: User | null = authUser;
         setUser(currentUser);
         
         if (currentUser) {
           
-          // Load friends and timeline data from real API
+          // Load friends, timeline, subscription, and life events data from real API
           try {
-            const [friendsData, timelineData] = await Promise.all([
+            const [friendsData, timelineData, subscriptionsData, lifeEventsData] = await Promise.all([
               api.getUserFriends(currentUser.user_id),
-              api.getUserTimeline(currentUser.username)
+              api.getUserTimeline(currentUser.username),
+              api.getUserSubscriptions(currentUser.user_id).catch(() => ({ subscriptions: [] })),
+              api.getUserLifeEvents(currentUser.user_id).catch(() => [])
             ]);
             setFriends(friendsData);
             setTimeline(timelineData);
+            setSubscriberCount(subscriptionsData.subscriptions?.length || 0);
+            setLifeEvents(lifeEventsData);
           } catch (apiError) {
             console.warn('Failed to load some data, using empty arrays:', apiError);
             setFriends([]);
             setTimeline([]);
+            setSubscriberCount(0);
+            setLifeEvents([]);
           }
         } else {
           setError('User not found');
@@ -133,23 +134,23 @@ function DashboardContent() {
   // Content upload state
   const [newContent, setNewContent] = useState('');
 
-  // Newsletter sending state
+  // Newsletter generation and sending state
+  const [isGeneratingNewsletter, setIsGeneratingNewsletter] = useState(false);
   const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
+  const [generatedNewsletter, setGeneratedNewsletter] = useState<string | null>(null);
+  const [newsletterGenerationResult, setNewsletterGenerationResult] = useState<string | null>(null);
   const [newsletterSendResult, setNewsletterSendResult] = useState<string | null>(null);
+  const [lifeEvents, setLifeEvents] = useState<any[]>([]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear any remaining local storage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentUsername');
-      }
-      window.location.href = '/';
-    }
-  };
+  // Data source connection state
+  const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
+  const [isWebsiteDialogOpen, setIsWebsiteDialogOpen] = useState(false);
+  const [githubUsername, setGitHubUsername] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<string | null>(null);
+
+
 
   const addFriend = () => {
     // In real app, call API to add friend
@@ -178,12 +179,51 @@ function DashboardContent() {
     }
   };
 
-  const sendNewsletterNow = async () => {
+  const generateNewsletterNow = async () => {
+    if (!user) return;
+    
+    setIsGeneratingNewsletter(true);
+    setNewsletterGenerationResult(null);
+    setGeneratedNewsletter(null);
+    
+    try {
+      // Generate newsletter with default configuration
+      const result = await api.generateNewsletter({
+        user_id: user.user_id,
+        newsletter_config: {
+          instructions: "Create a friendly, engaging newsletter highlighting recent life events and updates.",
+          periodicity: 168, // Past week (168 hours)
+          visibility: [
+            { type: "good_friends", name: "Good Friends" }
+          ],
+          name: "Weekly Update"
+        }
+      });
+      
+      if (result.success && result.content) {
+        setGeneratedNewsletter(result.content);
+        setNewsletterGenerationResult(`Newsletter generated successfully! Found ${result.events_count} recent events.`);
+      } else {
+        throw new Error(result.error_message || 'Failed to generate newsletter');
+      }
+    } catch (error) {
+      console.error('Newsletter generation error:', error);
+      setNewsletterGenerationResult('Failed to generate newsletter. Please try again.');
+    } finally {
+      setIsGeneratingNewsletter(false);
+      // Clear the message after 10 seconds
+      setTimeout(() => setNewsletterGenerationResult(null), 10000);
+    }
+  };
+
+  const sendGeneratedNewsletter = async () => {
+    if (!generatedNewsletter) return;
+    
     setIsSendingNewsletter(true);
     setNewsletterSendResult(null);
     
     try {
-      // Use the actual backend endpoint
+      // Use the actual backend endpoint to send to all subscribers
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'}/api/newsletter/admin/send-daily`, {
         method: 'POST',
         headers: {
@@ -204,6 +244,64 @@ function DashboardContent() {
       setIsSendingNewsletter(false);
       // Clear the message after 5 seconds
       setTimeout(() => setNewsletterSendResult(null), 5000);
+    }
+  };
+
+  const handleConnectGitHub = async () => {
+    if (!githubUsername.trim()) return;
+    
+    setIsConnecting(true);
+    setConnectionResult(null);
+    
+    try {
+      // Create a temporary session for the connection
+      const session = await api.startOnboarding();
+      
+      const result = await api.connectGitHub(session.session_id, githubUsername);
+      
+      if (result.success) {
+        setConnectionResult(`✅ Successfully connected GitHub profile: ${githubUsername}`);
+        setGitHubUsername('');
+        setIsGitHubDialogOpen(false);
+      } else {
+        throw new Error(result.message || 'Failed to connect GitHub');
+      }
+    } catch (error) {
+      console.error('GitHub connection error:', error);
+      setConnectionResult(`❌ Failed to connect GitHub: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsConnecting(false);
+      // Clear the message after 5 seconds
+      setTimeout(() => setConnectionResult(null), 5000);
+    }
+  };
+
+  const handleConnectWebsite = async () => {
+    if (!websiteUrl.trim()) return;
+    
+    setIsConnecting(true);
+    setConnectionResult(null);
+    
+    try {
+      // Create a temporary session for the connection
+      const session = await api.startOnboarding();
+      
+      const result = await api.connectWebsite(session.session_id, websiteUrl);
+      
+      if (result.success) {
+        setConnectionResult(`✅ Successfully connected website: ${websiteUrl}`);
+        setWebsiteUrl('');
+        setIsWebsiteDialogOpen(false);
+      } else {
+        throw new Error(result.message || 'Failed to connect website');
+      }
+    } catch (error) {
+      console.error('Website connection error:', error);
+      setConnectionResult(`❌ Failed to connect website: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsConnecting(false);
+      // Clear the message after 5 seconds
+      setTimeout(() => setConnectionResult(null), 5000);
     }
   };
 
@@ -261,14 +359,36 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <Button 
-                  size="lg"
-                  className="px-6 py-3"
-                  onClick={sendNewsletterNow}
-                  disabled={isSendingNewsletter}
-                >
-                  {isSendingNewsletter ? '⏳ Sending...' : '📧 Send Newsletter Now'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="lg"
+                    className="px-6 py-3"
+                    onClick={generateNewsletterNow}
+                    disabled={isGeneratingNewsletter}
+                  >
+                    {isGeneratingNewsletter ? '⏳ Generating...' : '📝 Generate Newsletter Now'}
+                  </Button>
+                  {generatedNewsletter && (
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className="px-6 py-3"
+                      onClick={sendGeneratedNewsletter}
+                      disabled={isSendingNewsletter}
+                    >
+                      {isSendingNewsletter ? '⏳ Sending...' : '📧 Send Newsletter'}
+                    </Button>
+                  )}
+                </div>
+                {newsletterGenerationResult && (
+                  <p className={`text-sm px-3 py-1 rounded ${
+                    newsletterGenerationResult.includes('successfully') 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {newsletterGenerationResult}
+                  </p>
+                )}
                 {newsletterSendResult && (
                   <p className={`text-sm px-3 py-1 rounded ${
                     newsletterSendResult.includes('successfully') 
@@ -288,8 +408,8 @@ function DashboardContent() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Friends</p>
-                    <p className="text-2xl font-bold text-foreground">{stats.totalFriends}</p>
+                    <p className="text-sm text-muted-foreground">Friends</p>
+                    <p className="text-2xl font-bold text-foreground">{friends.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                     <span className="text-primary">👥</span>
@@ -302,25 +422,11 @@ function DashboardContent() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Newsletters Sent</p>
-                    <p className="text-2xl font-bold text-foreground">{stats.monthlyInteractions}</p>
+                    <p className="text-sm text-muted-foreground">Timeline Entries</p>
+                    <p className="text-2xl font-bold text-foreground">{timeline.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                    <span className="text-secondary">📬</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Profile Views</p>
-                    <p className="text-2xl font-bold text-foreground">{stats.profileViews}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <span className="text-accent">👁️</span>
+                    <span className="text-secondary">📝</span>
                   </div>
                 </div>
               </CardContent>
@@ -331,10 +437,24 @@ function DashboardContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Subscribers</p>
-                    <p className="text-2xl font-bold text-foreground">{stats.newsletterSubscribers}</p>
+                    <p className="text-2xl font-bold text-foreground">{subscriberCount}</p>
                   </div>
-                  <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                    <span className="text-muted-foreground">📧</span>
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <span className="text-accent">📧</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Life Events</p>
+                    <p className="text-2xl font-bold text-foreground">{lifeEvents.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <span className="text-purple-600">🎯</span>
                   </div>
                 </div>
               </CardContent>
@@ -343,16 +463,52 @@ function DashboardContent() {
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="newsletter" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="friends">Friends</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="life-events">Life Events</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
             {/* Newsletter Tab */}
             <TabsContent value="newsletter" className="space-y-6">
+              {generatedNewsletter && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      📝 Generated Newsletter
+                      <Badge variant="outline" className="bg-green-50 text-green-700">Ready to Send</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-gray-50 p-6 rounded-lg border">
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{
+                          __html: generatedNewsletter.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/# (.*?)(<br\/>)/g, '<h1 class="text-xl font-bold mb-4">$1</h1>').replace(/## (.*?)(<br\/>)/g, '<h2 class="text-lg font-semibold mb-3">$2</h2>')
+                        }}
+                      />
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={generateNewsletterNow}
+                        disabled={isGeneratingNewsletter}
+                      >
+                        {isGeneratingNewsletter ? '⏳ Regenerating...' : '🔄 Regenerate'}
+                      </Button>
+                      <Button 
+                        onClick={sendGeneratedNewsletter}
+                        disabled={isSendingNewsletter}
+                      >
+                        {isSendingNewsletter ? '⏳ Sending...' : '📧 Send Newsletter'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <NewsletterManager userId={user?.user_id || ''} username={user?.username || ''} />
             </TabsContent>
 
@@ -587,6 +743,72 @@ function DashboardContent() {
               </Card>
             </TabsContent>
 
+            {/* Life Events Tab */}
+            <TabsContent value="life-events" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Life Events Timeline
+                    <Badge variant="outline">{lifeEvents.length} events</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {lifeEvents.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-lg mb-2">🎯 No life events yet</p>
+                        <p>Add content to create your life events timeline</p>
+                      </div>
+                    ) : (
+                      lifeEvents.map((event, index) => (
+                        <div key={event.event_id} className="border-l-4 border-primary pl-6 pb-6 relative">
+                          {index !== lifeEvents.length - 1 && (
+                            <div className="absolute left-0 top-8 w-px h-full bg-border"></div>
+                          )}
+                          <div className="absolute left-[-4px] top-2 w-2 h-2 bg-primary rounded-full"></div>
+                          
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-medium text-foreground">{event.summary}</h3>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {event.visibility || 'public'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(event.start_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {event.end_date && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Duration: {new Date(event.start_date).toLocaleDateString()} - {new Date(event.end_date).toLocaleDateString()}
+                            </p>
+                          )}
+                          
+                          {event.associated_docs && event.associated_docs.length > 0 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-muted-foreground">Documents:</span>
+                              <Badge variant="outline" className="text-xs">
+                                {event.associated_docs.length} attached
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {lifeEvents.length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <p className="text-sm text-muted-foreground text-center">
+                        💡 These events are automatically processed from your content and used to generate personalized newsletters
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings" className="space-y-6">
               <Card>
@@ -619,7 +841,7 @@ function DashboardContent() {
                         <p className="text-sm text-muted-foreground">Add content from any website or blog</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">Add Website</Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsWebsiteDialogOpen(true)}>Add Website</Button>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -632,14 +854,24 @@ function DashboardContent() {
                         <p className="text-sm text-muted-foreground">Connect your repositories and projects</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">Connect GitHub</Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsGitHubDialogOpen(true)}>Connect GitHub</Button>
                   </div>
                   
                   <div className="bg-muted p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      Connect external data sources to enrich your AI's knowledge about your life and activities. This helps create better newsletter content.
+                      Connect external data sources to enrich your AI&apos;s knowledge about your life and activities. This helps create better newsletter content.
                     </p>
                   </div>
+                  
+                  {connectionResult && (
+                    <div className={`p-3 rounded-md text-sm ${
+                      connectionResult.includes('✅') 
+                        ? 'bg-green-50 text-green-800 border border-green-200' 
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                      {connectionResult}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -666,6 +898,79 @@ function DashboardContent() {
           </Tabs>
         </div>
       </div>
+
+      {/* GitHub Connection Dialog */}
+      <Dialog open={isGitHubDialogOpen} onOpenChange={setIsGitHubDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Connect GitHub</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enter your GitHub username to connect your repositories and projects to your AI profile.
+            </p>
+            <Input
+              label="GitHub Username"
+              placeholder="e.g. octocat"
+              value={githubUsername}
+              onChange={(e) => setGitHubUsername(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleConnectGitHub} 
+                disabled={!githubUsername.trim() || isConnecting}
+                className="flex-1"
+              >
+                {isConnecting ? 'Connecting...' : 'Connect GitHub'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsGitHubDialogOpen(false)}
+                disabled={isConnecting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Website Connection Dialog */}
+      <Dialog open={isWebsiteDialogOpen} onOpenChange={setIsWebsiteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Website</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enter a website URL to scrape content and add it to your AI knowledge base.
+            </p>
+            <Input
+              label="Website URL"
+              placeholder="https://example.com"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              type="url"
+            />
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleConnectWebsite} 
+                disabled={!websiteUrl.trim() || isConnecting}
+                className="flex-1"
+              >
+                {isConnecting ? 'Connecting...' : 'Add Website'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsWebsiteDialogOpen(false)}
+                disabled={isConnecting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -42,28 +42,74 @@ class NewsletterService:
         privacy_code: str,
         subscriber_email: str,
         frequency: NewsletterFrequency,
-        subscriber_name: Optional[str] = None
+        subscriber_name: Optional[str] = None,
+        referral_code: Optional[str] = None
     ) -> Dict[str, Any]:
         """Subscribe to a user's newsletter using privacy code"""
         
-        # Decode privacy level from code
-        privacy_info = await self.newsletter_repo.get_privacy_level_by_code(privacy_code)
-        if not privacy_info:
-            return {"success": False, "message": "Invalid subscription link"}
+        # Handle referral code if provided
+        referral_info = None
+        referred_by_user_id = None
+        
+        if referral_code:
+            # First try to get referral link info
+            referral_link = await self.newsletter_repo.get_referral_link_by_code(referral_code)
+            if referral_link:
+                referral_info = referral_link
+                referred_by_user_id = referral_link.created_by_user_id
+                
+                # Increment click count
+                await self.newsletter_repo.increment_referral_click(referral_code)
+                
+                # Use referral link's privacy level and user
+                privacy_info = {
+                    'user_id': referral_link.user_id,
+                    'privacy_level': referral_link.privacy_level.value,
+                }
+                
+                # Get username from user repository
+                user = await self.user_repo.get_user_by_id(referral_link.user_id)
+                if user:
+                    privacy_info['username'] = user.username
+                else:
+                    return {"success": False, "message": "Invalid referral link - user not found"}
+            else:
+                # If referral_code doesn't match a referral link, treat it as a privacy code
+                privacy_info = await self.newsletter_repo.get_privacy_level_by_code(referral_code)
+                if not privacy_info:
+                    return {"success": False, "message": "Invalid subscription link"}
+        else:
+            # Decode privacy level from privacy code
+            privacy_info = await self.newsletter_repo.get_privacy_level_by_code(privacy_code)
+            if not privacy_info:
+                return {"success": False, "message": "Invalid subscription link"}
         
         try:
             subscription = await self.newsletter_repo.create_subscription(
                 source_user_id=privacy_info['user_id'],
                 source_username=privacy_info['username'],
                 subscriber_email=subscriber_email,
+                subscriber_name=subscriber_name,
                 privacy_level=VisibilityCategoryType(privacy_info['privacy_level']),
-                frequency=frequency
+                frequency=frequency,
+                referred_by_user_id=referred_by_user_id,
+                referral_code=referral_code
             )
+            
+            # If this was a referral, increment conversion count
+            if referral_code and referral_info:
+                await self.newsletter_repo.increment_referral_conversion(referral_code)
+            
+            message = f"Successfully subscribed to {privacy_info['username']}'s {frequency.value} newsletter"
+            if referred_by_user_id:
+                referrer = await self.user_repo.get_user_by_id(referred_by_user_id)
+                if referrer:
+                    message += f" (referred by {referrer.full_name})"
             
             return {
                 "success": True,
                 "subscription_id": subscription.subscription_id,
-                "message": f"Successfully subscribed to {privacy_info['username']}'s {frequency.value} newsletter",
+                "message": message,
                 "unsubscribe_code": subscription.subscription_code
             }
             
@@ -298,3 +344,65 @@ class NewsletterService:
         
         link_code = await self.newsletter_repo.create_privacy_link(user_id, privacy_level)
         return f"https://howyoubeen.com/subscribe/{link_code}"
+
+    # Referral Link Methods
+    async def create_referral_link(
+        self,
+        user_id: str,
+        created_by_user_id: str,
+        friend_name: str,
+        privacy_level: VisibilityCategoryType,
+        friend_email: Optional[str] = None,
+        expires_at: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        """Create a referral link for a friend"""
+        
+        try:
+            referral_link = await self.newsletter_repo.create_referral_link(
+                user_id=user_id,
+                created_by_user_id=created_by_user_id,
+                friend_name=friend_name,
+                privacy_level=privacy_level,
+                friend_email=friend_email,
+                expires_at=expires_at
+            )
+            
+            return {
+                "success": True,
+                "referral_link": f"https://howyoubeen.com/subscribe/{referral_link.referral_code}",
+                "referral_code": referral_link.referral_code,
+                "message": f"Referral link created for {friend_name}"
+            }
+        except Exception as e:
+            logger.error(f"Failed to create referral link: {e}")
+            return {
+                "success": False,
+                "referral_link": None,
+                "referral_code": None,
+                "message": "Failed to create referral link"
+            }
+
+    async def get_user_referral_links(self, created_by_user_id: str) -> List[Dict[str, Any]]:
+        """Get all referral links created by a user"""
+        
+        referral_links = await self.newsletter_repo.get_user_referral_links(created_by_user_id)
+        
+        return [{
+            "referral_id": link.referral_id,
+            "user_id": link.user_id,
+            "friend_name": link.friend_name,
+            "friend_email": link.friend_email,
+            "privacy_level": link.privacy_level.value,
+            "referral_code": link.referral_code,
+            "referral_link": f"https://howyoubeen.com/subscribe/{link.referral_code}",
+            "clicks": link.clicks,
+            "conversions": link.conversions,
+            "is_active": link.is_active,
+            "created_at": link.created_at.isoformat(),
+            "expires_at": link.expires_at.isoformat() if link.expires_at else None
+        } for link in referral_links]
+
+    async def get_referrals_for_user(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all subscribers referred for a user's newsletter"""
+        
+        return await self.newsletter_repo.get_referrals_for_user(user_id)

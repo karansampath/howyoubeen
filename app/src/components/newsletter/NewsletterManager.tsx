@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Mail, 
   Users, 
   Link, 
   Copy, 
-  Calendar,
   Shield,
   TrendingUp,
-  Settings
+  Share2,
+  UserPlus
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -32,6 +34,29 @@ interface PrivacyLink {
   privacy_level: string;
   link: string;
   subscribers_count: number;
+}
+
+interface ReferralLink {
+  referral_id: string;
+  friend_name: string;
+  friend_email?: string;
+  privacy_level: string;
+  referral_link: string;
+  referral_code: string;
+  clicks: number;
+  conversions: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface Referral {
+  subscription_id: string;
+  subscriber_email: string;
+  subscriber_name?: string;
+  privacy_level: string;
+  frequency: string;
+  referrer_name?: string;
+  created_at: string;
 }
 
 interface NewsletterManagerProps {
@@ -56,24 +81,29 @@ const frequencies = {
 export default function NewsletterManager({ userId, username }: NewsletterManagerProps) {
   const [subscriptions, setSubscriptions] = useState<NewsletterSubscription[]>([]);
   const [privacyLinks, setPrivacyLinks] = useState<PrivacyLink[]>([]);
+  const [referralLinks, setReferralLinks] = useState<ReferralLink[]>([]);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState('');
+  
+  // Referral link creation state
+  const [newReferral, setNewReferral] = useState({
+    friend_name: '',
+    friend_email: '',
+    privacy_level: 'good_friends'
+  });
+  const [isCreatingReferral, setIsCreatingReferral] = useState(false);
 
-  useEffect(() => {
-    loadSubscriptions();
-    loadPrivacyLinks();
-  }, [userId]);
-
-  const loadSubscriptions = async () => {
+  const loadSubscriptions = useCallback(async () => {
     try {
       const data = await api.getUserSubscriptions(userId);
       setSubscriptions(data.subscriptions || []);
     } catch (error) {
       console.error('Failed to load subscriptions:', error);
     }
-  };
+  }, [userId]);
 
-  const loadPrivacyLinks = async () => {
+  const loadPrivacyLinks = useCallback(async () => {
     try {
       const privacyLevelKeys = Object.keys(privacyLevels);
       const linkPromises = privacyLevelKeys.map(async (level) => {
@@ -102,7 +132,32 @@ export default function NewsletterManager({ userId, username }: NewsletterManage
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, username, subscriptions]);
+
+  const loadReferralLinks = useCallback(async () => {
+    try {
+      const data = await api.getUserReferralLinks(userId);
+      setReferralLinks(data.referral_links || []);
+    } catch (error) {
+      console.error('Failed to load referral links:', error);
+    }
+  }, [userId]);
+
+  const loadReferrals = useCallback(async () => {
+    try {
+      const data = await api.getUserReferrals(userId);
+      setReferrals(data.referrals || []);
+    } catch (error) {
+      console.error('Failed to load referrals:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadSubscriptions();
+    loadPrivacyLinks();
+    loadReferralLinks();
+    loadReferrals();
+  }, [loadSubscriptions, loadPrivacyLinks, loadReferralLinks, loadReferrals]);
 
   const handleCopyLink = async (link: string, privacyLevel: string) => {
     try {
@@ -111,6 +166,37 @@ export default function NewsletterManager({ userId, username }: NewsletterManage
       setTimeout(() => setCopiedLink(''), 2000);
     } catch (error) {
       console.error('Failed to copy link:', error);
+    }
+  };
+
+  const createReferralLink = async () => {
+    if (!newReferral.friend_name.trim()) return;
+    
+    setIsCreatingReferral(true);
+    try {
+      const result = await api.createReferralLink({
+        user_id: userId,
+        created_by_user_id: userId,
+        friend_name: newReferral.friend_name,
+        friend_email: newReferral.friend_email || undefined,
+        privacy_level: newReferral.privacy_level
+      });
+      
+      if (result.success) {
+        await loadReferralLinks(); // Reload referral links
+        setNewReferral({
+          friend_name: '',
+          friend_email: '',
+          privacy_level: 'good_friends'
+        });
+
+      } else {
+        console.error('Failed to create referral link:', result.message);
+      }
+    } catch (error) {
+      console.error('Failed to create referral link:', error);
+    } finally {
+      setIsCreatingReferral(false);
     }
   };
 
@@ -181,9 +267,10 @@ export default function NewsletterManager({ userId, username }: NewsletterManage
       </div>
 
       <Tabs defaultValue="subscribers" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="links">Sharing Links</TabsTrigger>
+          <TabsTrigger value="referrals">Referrals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="subscribers" className="space-y-4">
@@ -299,6 +386,226 @@ export default function NewsletterManager({ userId, username }: NewsletterManage
                   Family gets the close family link, work colleagues get the acquaintances link, etc.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="referrals" className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Create Referral Links */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" />
+                  Create Referral Link
+                </CardTitle>
+                <CardDescription>
+                  Generate a personalized link to invite friends to your newsletter
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Friend&apos;s Name</label>
+                  <Input
+                    placeholder="Enter friend's name"
+                    value={newReferral.friend_name}
+                    onChange={(e) => setNewReferral({...newReferral, friend_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Friend&apos;s Email (Optional)</label>
+                  <Input
+                    type="email"
+                    placeholder="friend@example.com"
+                    value={newReferral.friend_email}
+                    onChange={(e) => setNewReferral({...newReferral, friend_email: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Privacy Level</label>
+                  <Select value={newReferral.privacy_level} onValueChange={(value) => setNewReferral({...newReferral, privacy_level: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select privacy level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(privacyLevels).map(([key, level]) => (
+                        <SelectItem key={key} value={key}>
+                          {level.icon} {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button 
+                  onClick={createReferralLink} 
+                  disabled={!newReferral.friend_name.trim() || isCreatingReferral}
+                  className="w-full"
+                >
+                  {isCreatingReferral ? 'Creating...' : 'Create Referral Link'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Referral Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Referral Performance
+                </CardTitle>
+                <CardDescription>
+                  Track your referral link performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{referralLinks.reduce((sum, link) => sum + link.clicks, 0)}</div>
+                    <div className="text-sm text-gray-600">Total Clicks</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{referrals.length}</div>
+                    <div className="text-sm text-gray-600">Referral Subscriptions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">{referralLinks.length}</div>
+                    <div className="text-sm text-gray-600">Active Links</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {referralLinks.length > 0 ? Math.round((referrals.length / referralLinks.reduce((sum, link) => sum + link.clicks, 0)) * 100) || 0 : 0}%
+                    </div>
+                    <div className="text-sm text-gray-600">Conversion Rate</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Active Referral Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Referral Links</CardTitle>
+              <CardDescription>
+                Manage and track your personalized referral links
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {referralLinks.length === 0 ? (
+                <div className="text-center py-8">
+                  <Share2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No referral links created yet</p>
+                  <p className="text-sm text-gray-400">Create personalized links to invite friends!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {referralLinks.map((link) => (
+                    <div key={link.referral_id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-medium">{link.friend_name}</h3>
+                          {link.friend_email && (
+                            <p className="text-sm text-gray-600">{link.friend_email}</p>
+                          )}
+                        </div>
+                        <Badge className={privacyLevels[link.privacy_level as keyof typeof privacyLevels]?.color}>
+                          {privacyLevels[link.privacy_level as keyof typeof privacyLevels]?.icon}
+                          {privacyLevels[link.privacy_level as keyof typeof privacyLevels]?.label}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex gap-2 mb-3">
+                        <input
+                          type="text"
+                          value={link.referral_link}
+                          readOnly
+                          className="flex-1 px-3 py-2 border rounded text-sm bg-gray-50"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopyLink(link.referral_link, link.referral_id)}
+                        >
+                          {copiedLink === link.referral_id ? (
+                            <>✓ Copied</>
+                          ) : (
+                            <><Copy className="w-4 h-4 mr-1" /> Copy</>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>{link.clicks} clicks</span>
+                        <span>{link.conversions} conversions</span>
+                        <span>Created {new Date(link.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Referred Subscribers */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Referred Subscribers</CardTitle>
+              <CardDescription>
+                People who subscribed through your referral links
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {referrals.length === 0 ? (
+                <div className="text-center py-8">
+                  <UserPlus className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No referral subscriptions yet</p>
+                  <p className="text-sm text-gray-400">Share your referral links to get started!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {referrals.map((referral) => (
+                    <div key={referral.subscription_id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <UserPlus className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {referral.subscriber_name || referral.subscriber_email}
+                          </p>
+                          {referral.subscriber_name && (
+                            <p className="text-sm text-gray-600">{referral.subscriber_email}</p>
+                          )}
+                          {referral.referrer_name && (
+                            <p className="text-xs text-gray-500">Referred by {referral.referrer_name}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex gap-2 mb-1">
+                          <Badge 
+                            variant="secondary" 
+                            className={privacyLevels[referral.privacy_level as keyof typeof privacyLevels]?.color}
+                          >
+                            {privacyLevels[referral.privacy_level as keyof typeof privacyLevels]?.icon}
+                            {privacyLevels[referral.privacy_level as keyof typeof privacyLevels]?.label}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={frequencies[referral.frequency as keyof typeof frequencies]?.color}
+                          >
+                            {frequencies[referral.frequency as keyof typeof frequencies]?.icon}
+                            {frequencies[referral.frequency as keyof typeof frequencies]?.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {new Date(referral.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

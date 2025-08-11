@@ -124,13 +124,32 @@ class NewsletterSubscription(BaseModel):
     source_user_id: str  # User whose newsletter this is
     source_username: str  # Username for easy reference
     subscriber_email: str
+    subscriber_name: Optional[str] = None  # Optional name provided during subscription
     privacy_level: VisibilityCategoryType
     frequency: NewsletterFrequency
     status: SubscriptionStatus = SubscriptionStatus.ACTIVE
     subscription_code: str = Field(default_factory=generate_uuid)  # Unique code for unsubscribe
+    referred_by_user_id: Optional[str] = None  # User ID who referred this subscriber
+    referral_code: Optional[str] = None  # The referral code used for subscription
     last_sent: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class ReferralLink(BaseModel):
+    """Referral link for friend-specific newsletter invitations"""
+    referral_id: str = Field(default_factory=generate_uuid)
+    user_id: str  # User whose newsletter this is for
+    created_by_user_id: str  # User who created the referral link
+    friend_name: str  # Name of the friend this referral is for
+    friend_email: Optional[str] = None  # Optional email of the friend
+    privacy_level: VisibilityCategoryType
+    referral_code: str = Field(default_factory=generate_uuid)  # Unique referral code
+    clicks: int = 0  # Track how many times the link was clicked
+    conversions: int = 0  # Track how many subscriptions resulted from this link
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.now)
+    expires_at: Optional[datetime] = None  # Optional expiration date
 
 
 class NewsletterConfig(BaseModel):

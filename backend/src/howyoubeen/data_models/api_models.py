@@ -88,6 +88,7 @@ class NewsletterSubscribePayload(BaseModel):
     privacy_code: str  # Encoded privacy level
     frequency: NewsletterFrequency
     subscriber_name: Optional[str] = None
+    referral_code: Optional[str] = None
 
 
 class NewsletterUnsubscribePayload(BaseModel):
@@ -200,6 +201,37 @@ class NewsletterGenerateResult(BaseModel):
     generation_summary: dict[str, Any] = Field(default_factory=dict)
 
 
+# Referral Link API Models
+class CreateReferralLinkPayload(BaseModel):
+    """Payload for creating a referral link"""
+    user_id: str  # User whose newsletter this is for
+    created_by_user_id: str  # User creating the referral link  
+    friend_name: str
+    friend_email: Optional[str] = None
+    privacy_level: str
+    expires_at: Optional[datetime] = None
+
+
+class CreateReferralLinkResult(BaseModel):
+    """Result of creating a referral link"""
+    success: bool
+    referral_link: Optional[str] = None
+    referral_code: Optional[str] = None
+    message: str
+
+
+class GetReferralLinksPayload(BaseModel):
+    """Payload for getting user's referral links"""
+    user_id: str
+
+
+class GetReferralLinksResult(BaseModel):
+    """Result of getting referral links"""
+    success: bool
+    referral_links: list[dict[str, Any]] = Field(default_factory=list)
+    total_count: int
+
+
 # Top-Level Request/Response Models
 class APIRequest(BaseModel):
     """Top-level API request structure"""
@@ -217,7 +249,9 @@ class APIRequest(BaseModel):
         NewsletterSubscribePayload,
         NewsletterUnsubscribePayload,
         GetNewsletterSubscriptionsPayload,
-        NewsletterGeneratePayload
+        NewsletterGeneratePayload,
+        CreateReferralLinkPayload,
+        GetReferralLinksPayload
     ]
 
     class Config:
@@ -241,7 +275,9 @@ class APIResponse(BaseModel):
         NewsletterSubscribeResult,
         NewsletterUnsubscribeResult,
         GetNewsletterSubscriptionsResult,
-        NewsletterGenerateResult
+        NewsletterGenerateResult,
+        CreateReferralLinkResult,
+        GetReferralLinksResult
     ]] = None
     error: Optional[str] = None
     error_code: Optional[str] = None

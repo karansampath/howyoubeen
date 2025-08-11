@@ -303,6 +303,7 @@ class HowYouBeenAPI {
     subscriber_email: string;
     frequency: string;
     subscriber_name?: string;
+    referral_code?: string;
   }): Promise<{ success: boolean; subscription_id: string; message: string; unsubscribe_code: string }> {
     return this.request<{ success: boolean; subscription_id: string; message: string; unsubscribe_code: string }>('/api/newsletter/subscribe', {
       method: 'POST',
@@ -318,6 +319,61 @@ class HowYouBeenAPI {
 
   async getUserSubscriptions(userId: string): Promise<{ subscriptions: any[]; total_count: number }> {
     return this.request<{ subscriptions: any[]; total_count: number }>(`/api/newsletter/subscriptions/${userId}`);
+  }
+
+  // Referral Link API endpoints
+  async createReferralLink(payload: {
+    user_id: string;
+    created_by_user_id: string;
+    friend_name: string;
+    friend_email?: string;
+    privacy_level: string;
+    expires_at?: string;
+  }): Promise<{ success: boolean; referral_link: string; referral_code: string; message: string }> {
+    return this.request<{ success: boolean; referral_link: string; referral_code: string; message: string }>('/api/newsletter/create-referral-link', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getUserReferralLinks(createdByUserId: string): Promise<{ success: boolean; referral_links: any[]; total_count: number }> {
+    return this.request<{ success: boolean; referral_links: any[]; total_count: number }>(`/api/newsletter/referral-links/${createdByUserId}`);
+  }
+
+  async getUserReferrals(userId: string): Promise<{ success: boolean; referrals: any[]; total_count: number }> {
+    return this.request<{ success: boolean; referrals: any[]; total_count: number }>(`/api/newsletter/referrals/${userId}`);
+  }
+
+  // Newsletter generation API endpoints
+  async generateNewsletter(payload: {
+    user_id: string;
+    newsletter_config: {
+      instructions?: string;
+      periodicity?: number;
+      start_date?: string;
+      visibility: Array<{
+        type: string;
+        name?: string;
+      }>;
+      name?: string;
+    };
+  }): Promise<{
+    success: boolean;
+    content?: string;
+    error_message?: string;
+    events_count: number;
+    generation_summary: any;
+  }> {
+    return this.request<{
+      success: boolean;
+      content?: string;
+      error_message?: string;
+      events_count: number;
+      generation_summary: any;
+    }>('/api/newsletter/generate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   // Life Events API endpoints
@@ -500,6 +556,38 @@ class HowYouBeenAPI {
       body: JSON.stringify({
         current_password: currentPassword,
         new_password: newPassword,
+      }),
+    });
+  }
+
+  // Data source connection endpoints
+  async connectGitHub(sessionId: string, username: string, githubToken?: string): Promise<{
+    success: boolean;
+    platform: string;
+    message: string;
+    summary?: any;
+  }> {
+    return this.request('/api/onboarding/connect-github', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        username,
+        github_token: githubToken
+      }),
+    });
+  }
+
+  async connectWebsite(sessionId: string, url: string): Promise<{
+    success: boolean;
+    platform: string;
+    message: string;
+    summary?: any;
+  }> {
+    return this.request('/api/onboarding/connect-website', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        url
       }),
     });
   }
