@@ -68,11 +68,20 @@ export default function OnboardingPage() {
       if (currentStep < steps.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Final step - complete onboarding
+        // Final step - complete onboarding with user registration
         if (!sessionId) {
           throw new Error('No session ID available');
         }
         
+        // Register user with password
+        await api.register({
+          username: basicInfo.username,
+          email: basicInfo.email,
+          password: basicInfo.password,
+          full_name: basicInfo.fullName,
+        });
+        
+        // Complete onboarding process with data sources
         const onboardingData: OnboardingDataRequest = {
           username: basicInfo.username,
           email: basicInfo.email,
@@ -83,8 +92,8 @@ export default function OnboardingPage() {
         
         const result = await api.submitOnboardingData(sessionId, onboardingData);
         
-        // Redirect to user profile or dashboard
-        window.location.href = `/dashboard?user=${result.username}`;
+        // Redirect to dashboard (user is now authenticated via register)
+        window.location.href = `/dashboard`;
       }
     } catch (error) {
       console.error('Error in onboarding step:', error);
@@ -103,7 +112,9 @@ export default function OnboardingPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return basicInfo.fullName && basicInfo.username && basicInfo.email && basicInfo.bio;
+        return basicInfo.fullName && basicInfo.username && basicInfo.email && 
+               basicInfo.password && basicInfo.confirmPassword === basicInfo.password && 
+               basicInfo.password.length >= 6 && basicInfo.bio;
       case 1:
         return selectedSources.length > 0;
       case 2:
@@ -199,6 +210,37 @@ export default function OnboardingPage() {
                     onChange={(e) => setBasicInfo({...basicInfo, email: e.target.value})}
                     required
                   />
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Input
+                      label="Password"
+                      type="password"
+                      placeholder="Create a password"
+                      value={basicInfo.password}
+                      onChange={(e) => setBasicInfo({...basicInfo, password: e.target.value})}
+                      required
+                    />
+                    <Input
+                      label="Confirm Password"
+                      type="password"
+                      placeholder="Confirm your password"
+                      value={basicInfo.confirmPassword}
+                      onChange={(e) => setBasicInfo({...basicInfo, confirmPassword: e.target.value})}
+                      required
+                    />
+                  </div>
+                  
+                  {basicInfo.password && basicInfo.password.length < 6 && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                      Password must be at least 6 characters long
+                    </div>
+                  )}
+                  
+                  {basicInfo.password && basicInfo.confirmPassword && basicInfo.password !== basicInfo.confirmPassword && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                      Passwords do not match
+                    </div>
+                  )}
                   
                   <Textarea
                     label="Bio"
@@ -323,6 +365,7 @@ export default function OnboardingPage() {
                           <p><strong>Name:</strong> {basicInfo.fullName}</p>
                           <p><strong>Username:</strong> {basicInfo.username}</p>
                           <p><strong>Email:</strong> {basicInfo.email}</p>
+                          <p><strong>Password:</strong> {"*".repeat(basicInfo.password.length)}</p>
                           <p><strong>Bio:</strong> {basicInfo.bio.substring(0, 100)}...</p>
                         </div>
                       </CardContent>

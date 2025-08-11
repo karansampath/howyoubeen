@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,34 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const router = useRouter();
+  
+  // Auto-login with URL parameters for demo purposes
+  useEffect(() => {
+    const checkUrlLogin = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const email = urlParams.get('email');
+      const password = urlParams.get('password');
+      
+      if (email && password) {
+        setFormData({ email, password });
+        setIsLoading(true);
+        try {
+          await login(email, password);
+          router.push('/dashboard');
+        } catch (err) {
+          if (err instanceof APIError) {
+            setError(err.message);
+          } else {
+            setError('Demo login failed. Please try manual login.');
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    checkUrlLogin();
+  }, [login, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +174,7 @@ export default function LoginPage() {
                 <li>• Use &quot;Continue as Demo User&quot; to access the dashboard</li>
                 <li>• Visit <code className="bg-muted px-1 rounded">localhost:3000/[username]</code> to see the friend interface</li>
                 <li>• Try the onboarding flow to see the setup process</li>
+                <li>• Use URL parameters: <code className="bg-muted px-1 rounded">?email=user@example.com&amp;password=yourpassword</code> for auto-login</li>
               </ul>
             </CardContent>
           </Card>

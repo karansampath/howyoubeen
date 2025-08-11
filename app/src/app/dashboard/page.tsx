@@ -63,7 +63,7 @@ const friendshipLevels = {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,34 +83,16 @@ function DashboardContent() {
         setIsLoading(true);
         setError(null);
         
-        // Priority: 1) Authenticated user, 2) URL param (onboarding), 3) localStorage
-        let currentUser: User | null = null;
-        
-        if (authUser) {
-          // Use authenticated user data directly
-          currentUser = authUser;
-          setUser(currentUser);
-        } else {
-          // Fallback to onboarding flow
-          const usernameFromUrl = searchParams?.get('user');
-          const usernameFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentUsername') : null;
-          const currentUsername = usernameFromUrl || usernameFromStorage;
-          
-          if (!currentUsername) {
-            setError('No authenticated user found. Please complete onboarding or login.');
-            return;
-          }
-          
-          // Store username for future use
-          if (typeof window !== 'undefined' && usernameFromUrl) {
-            localStorage.setItem('currentUsername', usernameFromUrl);
-          }
-          
-          const userData = await api.getUser(currentUsername);
-          currentUser = userData;
+        // Use authenticated user data directly
+        if (!authUser) {
+          setError('No authenticated user found. Please login.');
+          return;
         }
+        
+        let currentUser: User | null = authUser;
+        setUser(currentUser);
+        
         if (currentUser) {
-          setUser(currentUser);
           
           // Load friends and timeline data from real API
           try {
@@ -155,12 +137,18 @@ function DashboardContent() {
   const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
   const [newsletterSendResult, setNewsletterSendResult] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    // Clear auth state and redirect
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('currentUsername');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear any remaining local storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentUsername');
+      }
+      window.location.href = '/';
     }
-    window.location.href = '/';
   };
 
   const addFriend = () => {
@@ -244,11 +232,9 @@ function DashboardContent() {
             <p className="text-red-600 mb-4">{error || 'Failed to load user data'}</p>
             <div className="flex gap-2 justify-center">
               <Button onClick={() => window.location.reload()}>Retry</Button>
-              {error?.includes('No authenticated user found') && (
-                <Button variant="outline" onClick={() => window.location.href = '/onboarding'}>
-                  Complete Onboarding
-                </Button>
-              )}
+              <Button variant="outline" onClick={() => window.location.href = '/login'}>
+                Login
+              </Button>
             </div>
           </div>
         </div>
@@ -615,6 +601,45 @@ function DashboardContent() {
                   <Input label="Email" value={user?.email || ''} readOnly />
                   <Textarea label="Bio" value={user?.bio || ''} rows={3} />
                   <Button>Update Profile</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Sources</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span className="text-lg">📃</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-foreground">Personal Website</h4>
+                        <p className="text-sm text-muted-foreground">Add content from any website or blog</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">Add Website</Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span className="text-lg">💻</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-foreground">GitHub</h4>
+                        <p className="text-sm text-muted-foreground">Connect your repositories and projects</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">Connect GitHub</Button>
+                  </div>
+                  
+                  <div className="bg-muted p-4 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Connect external data sources to enrich your AI's knowledge about your life and activities. This helps create better newsletter content.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 

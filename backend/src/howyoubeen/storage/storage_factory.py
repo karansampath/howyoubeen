@@ -159,7 +159,6 @@ def create_storage_from_config(config: dict) -> StorageService:
         logger.info("Creating local storage from config")
         return LocalStorageService(
             storage_root=local_config.get("storage_root")
-            storage_root=local_config.get("storage_root")
         )
     
     elif backend == "supabase":
