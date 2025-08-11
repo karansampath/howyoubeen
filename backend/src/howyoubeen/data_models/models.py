@@ -137,7 +137,7 @@ class NewsletterConfig(BaseModel):
     """Newsletter generation configuration for users"""
     instructions: Optional[str]
     periodicity: int # every x hours
-    start_date: datetime
+    start_date: Optional[datetime]
     visibility: List[VisibilityCategory]
     name: str
 

@@ -37,10 +37,7 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
     if force_backend:
         if force_backend.lower() == "local":
             logger.info("Using forced local storage backend")
-            return LocalStorageService(
-                backup_file=os.getenv("LOCAL_STORAGE_BACKUP"),
-                temp_dir=os.getenv("LOCAL_STORAGE_TEMP_DIR")
-            )
+            return LocalStorageService()
         elif force_backend.lower() == "supabase":
             logger.info("Using forced Supabase storage backend")
             return SupabaseStorageService(use_service_key=True)
@@ -60,8 +57,7 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
     # Fall back to local storage
     logger.info("No Supabase configuration found, using local storage")
     return LocalStorageService(
-        backup_file=os.getenv("LOCAL_STORAGE_BACKUP"),
-        temp_dir=os.getenv("LOCAL_STORAGE_TEMP_DIR")
+        storage_root=os.getenv("LOCAL_STORAGE_ROOT")
     )
 
 
@@ -74,7 +70,7 @@ def get_development_storage() -> StorageService:
     """
     logger.info("Creating development storage service")
     return LocalStorageService(
-        backup_file=os.getenv("LOCAL_STORAGE_BACKUP", "data/dev_backup.json")
+        storage_root=os.getenv("LOCAL_STORAGE_ROOT", "./storage")
     )
 
 
@@ -147,8 +143,7 @@ def create_storage_from_config(config: dict) -> StorageService:
         config = {
             "backend": "local",
             "local": {
-                "backup_file": "data/backup.json",
-                "temp_dir": "/tmp/howyoubeen"
+                "storage_root": "./storage"
             }
         }
         
@@ -166,8 +161,7 @@ def create_storage_from_config(config: dict) -> StorageService:
         local_config = config.get("local", {})
         logger.info("Creating local storage from config")
         return LocalStorageService(
-            backup_file=local_config.get("backup_file"),
-            temp_dir=local_config.get("temp_dir")
+            storage_root=local_config.get("storage_root")
         )
     
     elif backend == "supabase":

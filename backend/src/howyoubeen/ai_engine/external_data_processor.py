@@ -409,8 +409,8 @@ Focus on demonstrable skills and professional characteristics rather than assump
         try:
             response = await self._llm_completion(messages, model=self._choose_model("medium"))
 
-            # Parse JSON response
-            facts_data = json.loads(response.strip())
+            # Parse JSON response using robust parser
+            facts_data = self._extract_json_from_response(response)
 
             # Convert to LifeFact objects
             default_visibility = visibility_config[0] if visibility_config else VisibilityCategory(
@@ -653,7 +653,7 @@ Return as JSON array:
                 print(f"[DEBUG] Empty response from LLM, returning empty list")
                 return []
 
-            facts_data = json.loads(response.strip())
+            facts_data = self._extract_json_from_response(response)
             print(f"[DEBUG] Parsed JSON data: {facts_data}")
 
             default_visibility = visibility_config[0] if visibility_config else VisibilityCategory(
