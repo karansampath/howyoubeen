@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Header } from '@/components/layout/Header';
+import { AuthenticatedHeader } from '@/components/layout/AuthenticatedHeader';
 import NewsletterManager from '@/components/newsletter/NewsletterManager';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/components/auth/AuthContext';
 import { api, type User } from '@/lib/api';
 // Define types and friendship levels locally
 interface Friend {
@@ -210,7 +212,7 @@ function DashboardContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-        <Header user={null} onLogout={handleLogout} />
+        <AuthenticatedHeader />
         <div className="container mx-auto px-6 py-8 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -225,7 +227,7 @@ function DashboardContent() {
   if (error || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-        <Header user={null} onLogout={handleLogout} />
+        <AuthenticatedHeader />
         <div className="container mx-auto px-6 py-8 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error || 'Failed to load user data'}</p>
@@ -245,7 +247,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-      <Header user={user} onLogout={handleLogout} />
+      <AuthenticatedHeader />
       
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
@@ -635,7 +637,7 @@ function DashboardContent() {
 function DashboardPageFallback() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-border">
-      <Header user={null} onLogout={() => {}} />
+      <AuthenticatedHeader />
       <div className="container mx-auto px-6 py-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -648,8 +650,10 @@ function DashboardPageFallback() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardPageFallback />}>
-      <DashboardContent />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={<DashboardPageFallback />}>
+        <DashboardContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

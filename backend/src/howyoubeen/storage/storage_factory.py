@@ -37,9 +37,18 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
     if force_backend:
         if force_backend.lower() == "local":
             logger.info("Using forced local storage backend")
+            # Use consistent backup file location if not specified
+            backup_file = os.getenv("LOCAL_STORAGE_BACKUP")
+            temp_dir = os.getenv("LOCAL_STORAGE_TEMP_DIR")
+            
+            if not backup_file:
+                # Use a consistent default backup location
+                backup_file = "storage/data/backup.json"
+                logger.info(f"Using default backup file: {backup_file}")
+            
             return LocalStorageService(
-                backup_file=os.getenv("LOCAL_STORAGE_BACKUP"),
-                temp_dir=os.getenv("LOCAL_STORAGE_TEMP_DIR")
+                backup_file=backup_file,
+                temp_dir=temp_dir
             )
         elif force_backend.lower() == "supabase":
             logger.info("Using forced Supabase storage backend")
@@ -59,9 +68,18 @@ def get_storage_service(force_backend: Optional[str] = None) -> StorageService:
     
     # Fall back to local storage
     logger.info("No Supabase configuration found, using local storage")
+    # Use consistent backup file location if not specified
+    backup_file = os.getenv("LOCAL_STORAGE_BACKUP")
+    temp_dir = os.getenv("LOCAL_STORAGE_TEMP_DIR")
+    
+    if not backup_file:
+        # Use a consistent default backup location
+        backup_file = "storage/data/backup.json"
+        logger.info(f"Using default backup file: {backup_file}")
+    
     return LocalStorageService(
-        backup_file=os.getenv("LOCAL_STORAGE_BACKUP"),
-        temp_dir=os.getenv("LOCAL_STORAGE_TEMP_DIR")
+        backup_file=backup_file,
+        temp_dir=temp_dir
     )
 
 

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE NOT NULL,
   email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
   full_name TEXT NOT NULL,
   bio TEXT,
   profile_image_url TEXT,
@@ -16,7 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
   onboarding_completed BOOLEAN DEFAULT false,
   knowledge_last_updated TIMESTAMPTZ DEFAULT now(),
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  last_login TIMESTAMPTZ
 );
 
 -- Visibility categories - Replaces enum with relational table
